@@ -67,7 +67,9 @@
 
 <div id='title'>
 	<h3> multidimensional war game </h3>
-	<p> click on meowth on the grid to move. click on an adjacent enemy unit to do damage, or click on any enemy unit to get info. click on 'draw cards' to get some new abilities. 'end turn' causes the enemies to move and possibly do damage to you. </p>
+	<p> click on the cat on the grid to move. </p>
+	<p> click on an adjacent enemy unit to do damage, or on any enemy unit to get info. </p> 
+	<p> click on 'draw cards' to get some new abilities. 'end turn' causes the enemies to move and possibly do damage to you. </p>
 </div>
 
 <div id='header'>
@@ -125,9 +127,13 @@
 
 
 <script>
-// instructions:
-// click on an enemy to show stats of that enemy
-// 
+/****
+
+notes:
+
+there really should be an html attribute assigned to specify unit name/type. 
+
+****/
 
 var length = 36;
 var height = 15;
@@ -137,10 +143,9 @@ var player = [];
 var deck = [];
 var dealtCards = [];
 
-/****
-	
-	card class 
 
+/****
+	card class 
 ****/
 function Card(){
 	this.name = "";
@@ -149,7 +154,9 @@ function Card(){
 	this.description = "";
 }
 
-// create some cards
+/*****
+	create some cards 
+******/
 var card1 = new Card();
 card1.name = "complete domination";
 card1.image = "mikudayo.png";
@@ -188,7 +195,7 @@ card2.ability = function(){
 		currentUnit = null;
 	}
 	
-	 function validSpace(e){
+	function validSpace(e){
 		//var row = parseInt( e.target.parentNode.id.match(/\d+/)[0] );
 		var col = parseInt( e.target.id.match(/\d+/)[0] );
 		// come up with a separate function to determine whether a square is within player territory
@@ -233,10 +240,9 @@ card2.ability = function(){
 			document.getElementById('grid').removeEventListener('mouseover', validSpace);
 			document.getElementById('grid').removeEventListener('click', arguments.callee);
 		}
-	
 	});
 }
-card2.description = "a floating electric mouse that can shoot pancakes. select any cell from any of the first three columns from the right to place a new mouse unit.";
+card2.description = "a floating electric mouse that has pancakes. after clicking 'activate', select a cell from any of the first three columns from the right to place a new unit. red highlighted squares indicate its attack range";
 
 var card3 = new Card();
 card3.name = "bear attack";
@@ -260,6 +266,7 @@ card3.ability = function(){
 	document.getElementById('grid').addEventListener('mouseover', selectEnemyOn);
 	document.getElementById('grid').addEventListener('mouseout', selectEnemyOut);
 	document.getElementById('grid').addEventListener('click', function attack(e){
+		// note that this event can only happen once! it's a one-time event 
 		if(e.target.className === "enemy"){
 			// apply damage 
 			$('#grid').effect( "shake" );
@@ -285,11 +292,26 @@ card3.ability = function(){
 		}
 	});
 }
-card3.description = "launch a bear attack on your favorite enemy. select one enemy unit to inflict 10 damage.";
+card3.description = "launch a bear attack on your favorite enemy.  after clicking 'activate', select one enemy unit to inflict 10 damage.";
 
 deck.push(card1);
 deck.push(card2);
 deck.push(card3);
+
+
+
+/****   start game here  *****/
+// set up map 
+createGrid();
+initialState();
+
+// place enemy units in random locations
+for(var i = 0; i < 10; i++){
+	placeRandom();
+}
+/******************************/
+
+
 
 /*****
 
@@ -336,10 +358,9 @@ function createGrid(){
 	}
 }
 
-
 /*****
 
-	initiate game 
+	initiate 1st state of game 
 
 ******/
 function initialState(){
@@ -352,6 +373,7 @@ function initialState(){
 	var row = document.getElementById('row' + randRow);
 	var rowCells = row.childNodes;
 	
+	// randomly place nyasu 
 	for(var i = 0; i < rowCells.length; i++){
 		if(rowCells[i].id === ("column" + randColumn)){
 			rowCells[i].style.backgroundImage = "url('nyasu7.png')";
@@ -367,11 +389,12 @@ function initialState(){
 	// this is for the enemy's state 
 	// get random row 
 	var randRow = Math.floor(Math.random() * height);
-	var randColumn = Math.floor(Math.random() * ((length - 30) - 0));
+	var randColumn = Math.floor(Math.random() * ((length - 30)));
 	
 	var row = document.getElementById('row' + randRow);
 	var rowCells = row.childNodes;
 	
+	// randomly place umaruchan - enemy boss  
 	for(var i = 0; i < rowCells.length; i++){
 		if(rowCells[i].id === ("column" + randColumn)){
 			rowCells[i].className = "enemy";
@@ -391,7 +414,6 @@ function initialState(){
 // of the selected enemy. in the function where player attacks enemy, if enemy dies, check
 // 'selectedEnemy' attribute if it was that enemy. 
 document.addEventListener('click', function(e){
-	//console.log(e.target.id);
 	if(e.target.className === "enemy"){
 		var start = e.target.style.backgroundImage.indexOf("(") + 2;  // inclusive 
 		var end = e.target.style.backgroundImage.indexOf(")") - 1;   // not inclusive
@@ -404,7 +426,11 @@ document.addEventListener('click', function(e){
 });
 
 
+/****
 
+draw some cards from deck 
+
+*****/
 function drawCards(){
 	
 	for(var i = 1; i < 4; i++){
@@ -453,16 +479,6 @@ function drawCards(){
 	dealtCards = [];
 }
 
-// set up map 
-createGrid();
-initialState();
-
-// place enemy units in random locations
-for(var i = 0; i < 10; i++){
-	placeRandom();
-}
-
-
 /****
 	show paths when click on unit
 ****/
@@ -484,6 +500,17 @@ function activeObject(currElement){
 		}
 		currElement.setAttribute('pathLight', 1);
 		currentUnit = currElement;
+		
+		// if special unit, show attack paths 
+		if(currElement.style.backgroundImage === 'url("alolanRaichu.png")'){
+			var attackRange = getAttackRange(currElement, 2);
+			for(path in attackRange){
+				if(attackRange[path]){
+					attackRange[path].style.border = "1px solid #FF1919";
+				}
+			}
+		}
+		
 	}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 1){
 		var elementPaths = getPathsDefault(currElement);
 		for(key in elementPaths){
@@ -493,10 +520,20 @@ function activeObject(currElement){
 				//elementPaths[key].style.backgroundColor = "transparent";
 			}
 		}
+		
+		// if special unit, un-highlight attack paths 
+		if(currElement.style.backgroundImage === 'url("alolanRaichu.png")'){
+			var attackRange = getAttackRange(currElement, 2);
+			for(path in attackRange){
+				if(attackRange[path]){
+					attackRange[path].style.border = "1px solid #000";
+				}
+			}
+		}
+		
 		currElement.setAttribute('pathLight', 0);
 		currentUnit = null;
 	}
-
 }
 
 /*****
@@ -511,8 +548,8 @@ function enemyTurn(){
 	alert('enemy ended turn');
 }
 
-
 /*****
+	default path option
 	get the top, bottom, left, and right cells of clicked-on unit 
 *******/
 function getPathsDefault(element){
@@ -552,12 +589,80 @@ function getPathsDefault(element){
 		paths['bottom'] = null;
 	}
 	
-	
 	paths['left'] = element.previousSibling;
 	paths['right'] = element.nextSibling;
 	
 	return paths;
 }
+
+/*****
+	get attack range 
+	
+*******/
+function getAttackRange(element, distance){
+	// this element will return the top, bottom, left and right blocks
+	var paths = {};
+	
+	// get the parent of this element. this element should be a column cell, so the parent will be the row
+	var row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
+	var column = parseInt(element.id.match(/\d+/g)[0]);
+
+	// check top coord 
+	var topRow = document.getElementById("row" + (row - distance));
+	if(topRow){
+		topRow = topRow.childNodes;
+		for(var i = 0; i < topRow.length; i++){
+			var col = parseInt(topRow[i].id.match(/\d+/g)[0]);
+			if(col === column){
+				// if a top cell exists for given distance 
+				paths["top"] = topRow[i];
+				break;
+			}
+		}
+	}else{
+		paths["top"] = null;
+	}
+	
+	// check bottom coord 
+	var bottomRow = document.getElementById("row" + (row + distance));
+	if(bottomRow){
+		bottomRow = bottomRow.childNodes;
+		for(var i = 0; i < bottomRow.length; i++){
+			var col = parseInt(bottomRow[i].id.match(/\d+/g)[0]);
+			if(col === column){
+				// if a top cell exists for given distance 
+				paths["bottom"] = bottomRow[i];
+				break;
+			}
+		}
+	}else{
+		paths["bottom"] = null;
+	}
+	
+	// check left coord 
+	paths["left"] = null;
+	var currRow = element.parentNode.childNodes;
+	for(var i = 0; i < currRow.length; i++){
+		var newCol = parseInt(currRow[i].id.match(/\d+/g));
+		if(newCol === (column - distance)){
+			paths["left"] = currRow[i];
+			break;
+		}
+	}
+	
+	// check right coord 
+	paths["right"] = null;
+	for(var i = 0; i < currRow.length; i++){
+		var newCol = parseInt(currRow[i].id.match(/\d+/g));
+		if(newCol === (column + distance)){
+			paths["right"] = currRow[i];
+			break;
+		}
+	}
+	
+	return paths;
+}
+
 
 /*****
 
@@ -566,10 +671,25 @@ function getPathsDefault(element){
 ******/
 // pass in the DOM element you want to move to 
 function moveUnit(element){
-
-	//console.log(element);
-	if(element.style.border === '1px solid rgb(221, 223, 255)'){
-		if(element.style.backgroundImage === ""){
+	
+	// if square is highlighted or red (#FF1919) (for ranged units like raichu)
+	if(element.style.border === '1px solid rgb(221, 223, 255)' || element.style.border === '1px solid rgb(255, 25, 25)'){
+		// red squares only indicate attack range, not movement, so don't allow movement there 
+		if(element.style.backgroundImage === "" &&  element.style.border !== '1px solid rgb(255, 25, 25)'){
+		
+			// for ranged units
+			// clear the red highlight
+			if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+				// we can assume the current unit is a ranged attacker
+				// we can't assume what the range is, so the range ought to be another html attribute 
+				var attackRange = getAttackRange(currentUnit, 2);
+				console.log(attackRange);
+				for(path in attackRange){
+					if(attackRange[path]){
+						attackRange[path].style.border = "1px solid #000";
+					}
+				}
+			}
 		
 			// move the unit there 
 			element.style.backgroundImage = currentUnit.style.backgroundImage;
@@ -588,7 +708,7 @@ function moveUnit(element){
 					currUnitPaths[key].style.border = "1px solid #000";
 				}
 			}
-			
+		
 			// update player array 
 			for(var i = 0; i < player.length; i++){
 				if(player[i] === currentUnit){
@@ -596,6 +716,7 @@ function moveUnit(element){
 					break;
 				}
 			}
+			
 			// set currentUnit to new location
 			currentUnit = element;
 		}
@@ -609,13 +730,23 @@ function moveUnit(element){
 				enemies.splice(enemies.indexOf(element), 1);
 				
 				// obliterate enemy 
-				$('#grid').effect("shake");
+				if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+					$('#grid').effect("bounce");
+				}else{
+					$('#grid').effect("shake");
+				}
+				
 				element.classList.remove("enemy");
 				element.style.backgroundImage = "";
 				element.setAttribute("health", null);
 				element.setAttribute("attack", null);
 			}else{
-				$('#grid').effect("shake");
+				if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+					$('#grid').effect("bounce");
+				}else{
+					$('#grid').effect("shake");
+				}
+				
 				element.setAttribute("health", damage);
 			}
 
@@ -627,7 +758,22 @@ function moveUnit(element){
 				}
 			}
 			currentUnit.setAttribute('pathLight', 0);
-		}	
+					
+			// for ranged units
+			// clear the red highlight
+			if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+				// we can assume the current unit is a ranged attacker
+				// we can't assume what the range is, so the range ought to be another html attribute 
+				var attackRange = getAttackRange(currentUnit, 2);
+				console.log(attackRange);
+				for(path in attackRange){
+					if(attackRange[path]){
+						attackRange[path].style.border = "1px solid #000";
+					}
+				}
+			}
+		}
+
 	}
 }
 
@@ -657,10 +803,20 @@ function enemyMovement(enemyElement){
 				player.splice(player.indexOf(paths[path]), 1);
 			}else{
 				// otherwise decrement health 
+				paths[path].style.border = "1px solid #FF1919"; // red border to indicate damage
+				
 				paths[path].setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
-				document.getElementById('playerHealth').textContent = "" + opponentHealth - enemyElement.getAttribute('attack');
+				
+				// only show current health for boss nyasu for now 
+				if(paths[path].style.backgroundImage.match(/(nyasu7)/g)){
+					document.getElementById('playerHealth').textContent = "" + opponentHealth - enemyElement.getAttribute('attack');
+				}
+				
 				// do some animation to indicate attack 
-				$('#grid').effect("shake");
+				setTimeout(function(){ $('#grid').effect("shake") }, 200);
+				
+				var enemyCell = paths[path]; // assign a variable paths[path]. can't just change paths[path] border because then only the last one in the loop will be referenced
+				setTimeout(function(){ enemyCell.style.border = "1px solid #000"; console.log(paths[path]) }, 1000);
 			}
 			return;
 		}
