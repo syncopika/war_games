@@ -765,7 +765,7 @@ function moveUnit(element){
 				// we can assume the current unit is a ranged attacker
 				// we can't assume what the range is, so the range ought to be another html attribute 
 				var attackRange = getAttackRange(currentUnit, 2);
-				console.log(attackRange);
+				//console.log(attackRange);
 				for(path in attackRange){
 					if(attackRange[path]){
 						attackRange[path].style.border = "1px solid #000";
