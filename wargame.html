@@ -1,0 +1,738 @@
+<!doctype html>
+
+<html>
+
+<head>
+	<meta charset='utf-8'>
+	<title> multidimensional war game idea </title>
+	 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+</head>
+
+<style>
+	#title{
+		text-align: center;
+	}
+	body, html{
+		min-wdith: 100%;
+		min-height: 100%;
+		font-family: Arial;
+	}
+	#header{
+		text-align: center;
+	}
+	#enemyInfo, #playerOptions{
+		display: inline-block;
+	}
+	#playerOptions{
+		margin-left: 50px;
+	}
+	#grid{
+		position: relative;
+		border: 1px solid #000;
+		background-image: url('map.png');
+		background-size: 100% 100%;
+		padding: 0;
+		margin: 0;
+	}
+	#showCards{
+		display: block;
+		position: relative;
+		width: 100%;
+		height: auto;
+		text-align: center;
+	}
+	.card{
+		display: inline-block;
+		vertical-align: top;
+		height: 400px;
+		width: 250px;
+		border-radius: 20px;
+		border: 1px solid #000;
+		margin-left: 20px;
+		text-align: center;
+	}
+	#footer{
+		display: block;
+		position: relative;
+		margin-top: 5%;
+		height: 20px;
+		width: 100%;
+		text-align: center;
+	}
+
+</style>
+
+<body>
+
+<div id='title'>
+	<h3> multidimensional war game </h3>
+	<p> click on meowth on the grid to move. click on an adjacent enemy unit to do damage. click on 'draw cards' to get some new abilities. 'end turn' causes the enemies to move and possibly do damage to you. </p>
+</div>
+
+<div id='header'>
+	<div id='enemyInfo'>
+		<h2> enemy info </h2>
+		<span><img id='selectedEnemy' src=''></span>
+		<h3> enemy health: <span id='enemyHealth'></span> </h3>
+		
+	</div>
+	<div id='playerOptions'>
+		<span><img src='nyasu7.png' id='player' width='70px' height='50px'></img></span> 
+		<h3> player's health: <span id='playerHealth'> 100 </span></h3>
+		<button id='endTurn' onclick='enemyTurn()'> end turn </button>
+		<button id='drawCards' onclick='drawCards()'> draw cards </button>
+	</div>
+</div>
+
+<div id='grid'>
+</div>
+
+<div id='showCards'>
+	<h3> cards go here </h3>
+	
+	<div id='currentCards'>
+		<div class ='card' id='deck'>
+			<h2> hi i'm the deck </h2>
+		</div>
+		
+		<div class ='card' id='card1'>
+			<div id='card1title'></div>
+			<div> <img id='card1pic'></img> </div>
+			<div id='card1description'></div>
+		</div>
+		
+		<div class ='card' id='card2'>
+			<div id='card2title'></div>
+			<div> <img id='card2pic'></img> </div>
+			<div id='card2description'></div>
+		</div>
+		
+		<div class ='card' id='card3'>
+			<div id='card3title'></div>
+			<div> <img id='card3pic'></img> </div>
+			<div id='card3description'></div>
+		</div>
+	</div>
+	
+</div>
+
+<div id='footer'>
+	<p> this is a footer </p>
+</div>
+
+</body>
+
+
+<script>
+// instructions:
+// click on an enemy to show stats of that enemy
+// 
+
+var length = 36;
+var height = 15;
+var currentUnit = null;  // dom element of clicked on unit 
+var enemies = []; //DOM element locations of all enemies go here 
+var player = [];  
+var deck = [];
+var dealtCards = [];
+
+/****
+	
+	card class 
+
+****/
+function Card(){
+	this.name = "";
+	this.image = ""; // img src goes here
+	this.ability = function(){};
+	this.description = "";
+}
+
+// create some cards
+var card1 = new Card();
+card1.name = "complete domination";
+card1.image = "mikudayo.png";
+card1.ability = function(){
+	// wipe out all enemies 
+	for(var i = 0; i < enemies.length; i++){
+		$('#grid').effect("shake");
+		enemies[i].style.backgroundImage = "";
+		enemies[i].classList.remove("enemy");
+		enemies[i].setAttribute('health', null);
+		enemies[i].setAttribute('attack', null);
+	}
+	enemies = [];
+}
+card1.description = "mikudayo wipes out all enemies. yay";
+
+var card2 = new Card();
+card2.name = "pancake sniper";
+card2.image = "alolanRaichu.png";
+card2.ability = function(){
+	// place a pancake sniper aka alolan raichu on the field 
+	// https://stackoverflow.com/questions/4402287/javascript-remove-event-listener
+	
+	// after picking this ability, the unit needs to be placed immediately
+	// therefore, if there was a unit selected right before clicking this ability,
+	// it needs to be unselected
+	if(currentUnit){
+		var elementPaths = getPathsDefault(currentUnit);
+		for(key in elementPaths){
+			if(elementPaths[key]){
+				//elementPaths[key].style.border = "none";
+				elementPaths[key].style.border = "1px solid #000";
+			}
+		}
+		currentUnit.setAttribute('pathLight', 0);
+		currentUnit = null;
+	}
+	
+	 function validSpace(e){
+		//var row = parseInt( e.target.parentNode.id.match(/\d+/)[0] );
+		var col = parseInt( e.target.id.match(/\d+/)[0] );
+		// come up with a separate function to determine whether a square is within player territory
+		if(col > 32){
+			// highlight spot
+			e.target.style.border = "1px solid rgb(221, 223, 255)";
+			
+		}
+	}
+	
+	function leaveSpace(e){
+		//var row = parseInt( e.target.parentNode.id.match(/\d+/)[0] );
+		var col = parseInt( e.target.id.match(/\d+/)[0] );
+		// come up with a separate function to determine whether a square is within player territory
+		if(col > 32){
+			e.target.style.border = "1px solid #000";
+			
+		}
+	}
+	
+	// need to disable clicking anything else other than a valid space after this card has been selected 
+	document.getElementById('grid').addEventListener('mouseover', validSpace);
+	document.getElementById('grid').addEventListener('mouseout', leaveSpace);
+	document.getElementById('grid').addEventListener('click', function placeUnit(e){
+	
+		var col = parseInt( e.target.id.match(/\d+/)[0] );
+		
+		if(col > 32 && e.target.style.backgroundImage === ""){
+		
+			// place the unit 
+			e.target.style.backgroundImage = "url('" + "alolanRaichu.png" + "')";
+			e.target.setAttribute("health", 120);
+			e.target.setAttribute("attack", 70);
+			player.push(e.target);	// add new unit to player's units array
+			currentUnit = e.target;  // set as current unit 
+			
+			// remove highlighted border
+			e.target.style.border = "1px solid #000";
+			
+			// remove the event listeners associated with this card
+			document.getElementById('grid').removeEventListener('mouseout', leaveSpace);
+			document.getElementById('grid').removeEventListener('mouseover', validSpace);
+			document.getElementById('grid').removeEventListener('click', arguments.callee);
+		}
+	
+	});
+}
+card2.description = "a floating electric mouse that can shoot pancakes. select any cell from any of the first three columns from the right to place a new mouse unit.";
+
+var card3 = new Card();
+card3.name = "bear attack";
+card3.image = "aoba6.png";
+card3.ability = function(){
+	// launch a bear attack on a specified enemy unit 
+	// does 10 damage 
+	// make sure to show damage done and which unit 
+	function selectEnemyOn(e){
+		if(e.target.className === "enemy"){
+			e.target.style.border = "1px solid rgb(221, 223, 255)";
+		}
+	}
+	
+	function selectEnemyOut(e){
+		if(e.target.className === "enemy"){
+			e.target.style.border = "1px solid #000";
+		}
+	}
+	
+	document.getElementById('grid').addEventListener('mouseover', selectEnemyOn);
+	document.getElementById('grid').addEventListener('mouseout', selectEnemyOut);
+	document.getElementById('grid').addEventListener('click', function attack(e){
+		if(e.target.className === "enemy"){
+			// apply damage 
+			$('#grid').effect( "shake" );
+			
+			var newHealth =  e.target.getAttribute("health") - 10;
+			
+			if(newHealth <= 0){
+				enemies.splice(enemies.indexOf(e.target), 1);
+				e.target.style.backgroundImage = "";
+				e.target.setAttribute("health", null);
+				e.target.setAttribute("attack", null);
+				e.target.classList.remove("enemy");
+			}else{
+				e.target.setAttribute("health", newHealth);
+			}
+			
+			e.target.style.border = "1px solid #000";
+			
+			// remove the event listeners associated with this card
+			document.getElementById('grid').removeEventListener('mouseout', selectEnemyOut);
+			document.getElementById('grid').removeEventListener('mouseover', selectEnemyOn);
+			document.getElementById('grid').removeEventListener('click', arguments.callee);
+		}
+	});
+}
+card3.description = "launch a bear attack on your favorite enemy. select one enemy unit to inflict 10 damage.";
+
+deck.push(card1);
+deck.push(card2);
+deck.push(card3);
+
+/*****
+
+create the grid map 
+
+******/
+function createGrid(){
+
+	var parent = document.getElementById('grid');
+
+	for(var i = 0; i < height; i++){
+		
+		var newRow = document.createElement('div');
+		//newRow.style.border = '1px solid #000';
+		newRow.style.width = "100%";
+		newRow.id = 'row' + i;
+		newRow.style.padding = "0";
+		newRow.style.margin = "0";
+		
+		for(var j = 0; j < length; j++){
+
+			var newColumn = document.createElement('div');
+			newColumn.style.border = '1px solid #000';
+			newColumn.style.width = "50px";
+			newColumn.style.height = '40px';
+			newColumn.style.display = 'inline-block';
+			newColumn.style.backgroundSize = "100% 100%";
+			newColumn.id = 'column' + j;
+			newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
+			
+			// bind click event to highlight paths 
+		    newColumn.addEventListener('click', function(){
+				activeObject(this);
+			});
+			
+			// bind click event to move unit 
+		    newColumn.addEventListener('click', function(){
+				moveUnit(this);
+			});
+			
+			newRow.appendChild(newColumn);
+		}
+		parent.appendChild(newRow);
+	}
+}
+
+
+/*****
+
+	initiate game 
+
+******/
+function initialState(){
+
+	// this is for the player's state 
+	// get random row 
+	var randRow = Math.floor(Math.random() * height);
+	var randColumn = Math.floor(Math.random() * (length - 30)) + 30;
+	
+	var row = document.getElementById('row' + randRow);
+	var rowCells = row.childNodes;
+	
+	for(var i = 0; i < rowCells.length; i++){
+		if(rowCells[i].id === ("column" + randColumn)){
+			rowCells[i].style.backgroundImage = "url('nyasu7.png')";
+			//playerObject.location = rowCells[i];
+			// add stats for player unit 
+			rowCells[i].setAttribute("health", 100);
+			rowCells[i].setAttribute("attack", 20);
+			player.push(rowCells[i]);
+			break;
+		}
+	}
+	
+	// this is for the enemy's state 
+	// get random row 
+	var randRow = Math.floor(Math.random() * height);
+	var randColumn = Math.floor(Math.random() * ((length - 30) - 0));
+	
+	var row = document.getElementById('row' + randRow);
+	var rowCells = row.childNodes;
+	
+	for(var i = 0; i < rowCells.length; i++){
+		if(rowCells[i].id === ("column" + randColumn)){
+			rowCells[i].className = "enemy";
+			rowCells[i].setAttribute("health", 50);
+			rowCells[i].setAttribute("attack", 5);
+			rowCells[i].style.backgroundImage = "url('umaruchan.png')";
+			rowCells[i].style.backgroundSize = '100% 100%';
+			enemies.push(rowCells[i]);
+			break;
+		}
+	}
+}
+
+// add event listener to document to be able to click on enemy units and get some info 
+// what if selected enemy unit gets killed and their info was present? delete that info? 
+// if so, then maybe add an attribute for 'selectedEnemy' that wil equal the DOM element 
+// of the selected enemy. in the function where player attacks enemy, if enemy dies, check
+// 'selectedEnemy' attribute if it was that enemy. 
+document.addEventListener('click', function(e){
+	//console.log(e.target.id);
+	if(e.target.className === "enemy"){
+		var start = e.target.style.backgroundImage.indexOf("(") + 2;  // inclusive 
+		var end = e.target.style.backgroundImage.indexOf(")") - 1;   // not inclusive
+		var imgSrc = e.target.style.backgroundImage.substring(start, end);
+		document.getElementById('selectedEnemy').setAttribute('src', imgSrc);
+		document.getElementById('selectedEnemy').setAttribute('width', 70);
+		document.getElementById('selectedEnemy').setAttribute('height', 50);
+		document.getElementById('enemyHealth').textContent = e.target.getAttribute("health");
+	}
+});
+
+
+
+function drawCards(){
+	
+	for(var i = 1; i < 4; i++){
+		var randIndex = Math.floor(Math.random() * deck.length);
+		var selectedCard = deck[randIndex];
+		//console.log(randIndex);
+		// select a random card from deck, as long as not in dealtCards
+		// this implementation allows for the current deck to not be changed (i.e. drawing a card doesn't change the deck here)
+		// and assumes of 1 of each card
+		// It won't work if there are duplicates of a card. you will need to alter the deck when drawing cards 
+		
+		while(dealtCards.includes(selectedCard)){
+			selectedCard = deck[randIndex];
+			randIndex = Math.floor(Math.random() * deck.length);
+		}
+		
+		// new card found, add to dealtCards
+		dealtCards.push(selectedCard);
+		
+		var cardDisplay = document.getElementById('card' + i);
+		
+		document.getElementById('card' + i + 'title').textContent = selectedCard.name;
+		document.getElementById('card' + i + 'title').style.fontWeight = "bold";
+		
+		document.getElementById('card' + i + 'pic').setAttribute('src', selectedCard.image);
+		document.getElementById('card' + i + 'pic').setAttribute('width', '200px');
+		document.getElementById('card' + i + 'pic').setAttribute('height', '150px');
+		document.getElementById('card' + i + 'pic').style.marginTop = "10px";
+		
+		document.getElementById('card' + i + 'description').textContent = selectedCard.description;
+		
+		var newButton = document.createElement('button');
+		newButton.style.marginTop = '10px';
+		newButton.textContent = 'activate';
+		newButton.id = 'card' + i + 'button';
+		
+		// not really relevant, but good reminder 
+		// https://stackoverflow.com/questions/8909652/adding-click-event-listeners-in-loop
+		// https://stackoverflow.com/questions/750486/javascript-closure-inside-loops-simple-practical-example?noredirect=1&lq=1
+		newButton.onclick = selectedCard.ability;
+		
+		cardDisplay.appendChild(newButton);
+	}
+	
+	// reset dealtCards
+	dealtCards = [];
+}
+
+// set up map 
+createGrid();
+initialState();
+
+// place enemy units in random locations
+for(var i = 0; i < 10; i++){
+	placeRandom();
+}
+
+
+/****
+	show paths when click on unit
+****/
+function activeObject(currElement){
+
+	// only the player can select/move their own units 
+	if(!player.includes(currElement)){
+		return;
+	}
+
+	// what kind of unit is it?
+	if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 0){
+		// light up the paths 
+		var elementPaths = getPathsDefault(currElement);
+		for(key in elementPaths){
+			if(elementPaths[key]){
+				elementPaths[key].style.border = "1px solid #dddfff";
+			}
+		}
+		currElement.setAttribute('pathLight', 1);
+		currentUnit = currElement;
+	}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 1){
+		var elementPaths = getPathsDefault(currElement);
+		for(key in elementPaths){
+			if(elementPaths[key]){
+				//elementPaths[key].style.border = "none";
+				elementPaths[key].style.border = "1px solid #000";
+				//elementPaths[key].style.backgroundColor = "transparent";
+			}
+		}
+		currElement.setAttribute('pathLight', 0);
+		currentUnit = null;
+	}
+
+}
+
+/*****
+	
+	enemy's turn 
+	
+******/
+function enemyTurn(){
+	for(var i = 0; i < enemies.length; i++){
+		enemyMovement(enemies[i]);
+	}
+	alert('enemy ended turn');
+}
+
+
+/*****
+	get the top, bottom, left, and right cells of clicked-on unit 
+*******/
+function getPathsDefault(element){
+	// this element will return the top, bottom, left and right blocks
+	var paths = {};
+	
+	// get the parent of this element. this element should be a column cell, so the parent will be the row
+	var row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
+	var column = parseInt(element.id.match(/\d+/g)[0]);
+	
+	// top coordinate is row - 1, same column num
+	// bottom coord is row + 1, same column num
+	// left coord is column num - 1, same row 
+	// right coord is column num + 1, same row 
+
+	if(element.parentNode.previousSibling){	
+		var previousRow = element.parentNode.previousSibling.childNodes;
+		for(var i = 0; i < previousRow.length; i++){
+			if(previousRow[i].id.match(/\d+/g)[0] == column){
+				paths['top'] = previousRow[i];
+				break;
+			}
+		}
+	}else{
+		paths['top'] = null;
+	}
+	
+	if(element.parentNode.nextSibling){
+		var nextRow = element.parentNode.nextSibling.childNodes;
+		for(var i = 0; i < nextRow.length; i++){
+			if(nextRow[i].id.match(/\d+/g)[0] == column){
+				paths['bottom'] = nextRow[i];
+				break;
+			}
+		}
+	}else{
+		paths['bottom'] = null;
+	}
+	
+	
+	paths['left'] = element.previousSibling;
+	paths['right'] = element.nextSibling;
+	
+	return paths;
+}
+
+/*****
+
+	move player's units 
+
+******/
+// pass in the DOM element you want to move to 
+function moveUnit(element){
+
+	//console.log(element);
+	if(element.style.border === '1px solid rgb(221, 223, 255)'){
+		if(element.style.backgroundImage === ""){
+		
+			// move the unit there 
+			element.style.backgroundImage = currentUnit.style.backgroundImage;
+			element.setAttribute("health", currentUnit.getAttribute("health"));
+			element.setAttribute("attack", currentUnit.getAttribute("attack"));
+			
+			// clear old data for currentUnit
+			currentUnit.style.backgroundImage = "";
+			currentUnit.setAttribute("health", null);
+			currentUnit.setAttribute("attack", null)
+			
+			var currUnitPaths = getPathsDefault(currentUnit);
+			for(key in currUnitPaths){
+				if(currUnitPaths[key]){
+					//currUnitPaths[key].style.border = "none";
+					currUnitPaths[key].style.border = "1px solid #000";
+				}
+			}
+			
+			// update player array 
+			for(var i = 0; i < player.length; i++){
+				if(player[i] === currentUnit){
+					player[i] = element;
+					break;
+				}
+			}
+			// set currentUnit to new location
+			currentUnit = element;
+		}
+		
+		// if cell to move in is an enemy unit 
+		if(element.className === "enemy"){
+			// do damage
+			var damage = element.getAttribute("health") - currentUnit.getAttribute("health");
+			if(damage <= 0){
+				// remove from enemies array 
+				enemies.splice(enemies.indexOf(element), 1);
+				
+				// obliterate enemy 
+				$('#grid').effect("shake");
+				element.classList.remove("enemy");
+				element.style.backgroundImage = "";
+				element.setAttribute("health", null);
+				element.setAttribute("attack", null);
+			}else{
+				$('#grid').effect("shake");
+				element.setAttribute("health", damage);
+			}
+
+			var currUnitPaths = getPathsDefault(currentUnit);
+			for(key in currUnitPaths){
+				if(currUnitPaths[key]){
+					//currUnitPaths[key].style.border = "none";
+					currUnitPaths[key].style.border = "1px solid #000";
+				}
+			}
+			currentUnit.setAttribute('pathLight', 0);
+		}	
+	}
+}
+
+function enemyMovement(enemyElement){
+
+	// get left, right, top, bottom cells 
+	var paths = getPathsDefault(enemyElement);
+	
+	// attack if one of those cells contains one of the player's units
+	for(path in paths){
+	
+		if(paths[path] === null){
+			continue;
+		}
+		if(player.includes(paths[path])){
+			// do attack 
+			var opponentHealth = paths[path].getAttribute('health');
+			var newOpponentHealth = opponentHealth - enemyElement.getAttribute('attack');
+			// what if kill opponent?
+			if(newOpponentHealth <= 0){
+				// obliterate opponent from map
+				document.getElementById('playerHealth').textContent = "0";
+				paths[path].style.backgroundImage = "";
+				paths[path].setAttribute('health', null);
+				paths[path].setAttribute('attack', null);
+				// remove from player array
+				player.splice(player.indexOf(paths[path]), 1);
+			}else{
+				// otherwise decrement health 
+				paths[path].setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
+				document.getElementById('playerHealth').textContent = "" + opponentHealth - enemyElement.getAttribute('attack');
+				// do some animation to indicate attack 
+				$('#grid').effect("shake");
+			}
+			return;
+		}
+		
+		// but what if there is a fellow enemy in an adjacent square?
+		if(enemies.includes(paths[path])){
+			// don't do anything
+			return;
+		}
+	}
+		
+	// if no enemy, randomly move in a direction 
+	var direction = Math.floor(Math.random() * 10);
+	var newCell;
+	
+	if(direction < 10){
+		// move right
+		newCell = enemyElement.nextSibling;
+	}else{
+		// move left 
+		newCell = enemyElement.previousSibling;
+	}
+	
+	if(newCell === null){
+		return;
+	}
+	
+	newCell.setAttribute('health', enemyElement.getAttribute('health'));
+	newCell.setAttribute('attack', enemyElement.getAttribute('attack'));
+	newCell.className = "enemy";
+	newCell.style.backgroundImage = enemyElement.style.backgroundImage;
+	
+	for(var i = 0; i < enemies.length; i++){
+		if(enemies[i] === enemyElement){
+			enemies[i] = newCell;
+			break;
+		}
+	}
+	
+	enemyElement.classList.remove("enemy");
+	enemyElement.style.backgroundImage = "";
+}
+
+function placeRandom(){
+
+	var randomCol = Math.floor(Math.random() * (length-1));
+	var randomRow = Math.floor(Math.random() * (height-1));
+	var randCell = getCell(randomRow, randomCol);
+	
+	while(randCell.style.backgroundImage !== ""){
+		randomCol = Math.floor(Math.random() * (length-1));
+		randomRow = Math.floor(Math.random() * (height-1));
+		randCell = getCell(randomRow, randomCol);
+	}
+	
+	randCell.setAttribute("health", 20);
+	randCell.setAttribute("attack", 5);
+	randCell.className = "enemy";
+	randCell.style.backgroundImage = "url('shiina2.png')";
+	enemies.push(randCell);
+}
+
+function getCell(row, col){
+	var row = document.getElementById('row' + row).childNodes;
+	for(var i = 0; i < row.length; i++){
+		if(row[i].id === 'column' + col){
+			return row[i];
+		}
+	}
+	return null;
+}
+	
+</script>
+
+</html>
