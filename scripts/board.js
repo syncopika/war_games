@@ -277,7 +277,7 @@ function moveUnit(element){
 		// if cell to move in is an enemy unit 
 		if(element.className === "enemy"){
 			// do damage
-			var damage = element.getAttribute("health") - currentUnit.getAttribute("health");
+			var damage = element.getAttribute("health") - currentUnit.getAttribute("attack");
 			if(damage <= 0){
 				// remove from enemies array 
 				enemies.splice(enemies.indexOf(element), 1);
