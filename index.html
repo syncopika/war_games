@@ -4,16 +4,19 @@
 
 <head>
 	<meta charset='utf-8'>
-	<title> multidimensional war game idea </title>
+	<title> war game idea </title>
 	 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
 	<script src='scripts/cards.js'></script>
 	<script src='scripts/board.js'></script>
+	<script src='scripts/enemyAI.js'></script>
 </head>
 
 <style>
 	#title{
 		text-align: center;
+		display: inline-block;
+		vertical-align: top;
 	}
 	body, html{
 		min-wdith: 100%;
@@ -73,25 +76,28 @@
 
 <body>
 
-<div id='title'>
-	<h3> multidimensional war game </h3>
-	<p> click on the cat on the grid to move. </p>
-	<p> click on an adjacent enemy unit to do damage, or on any enemy unit to get info. </p> 
-	<p> click on 'draw cards' to get some new abilities. 'end turn' causes the enemies to move and possibly do damage to you. </p>
-</div>
-
 <div id='header'>
 	<div id='enemyInfo'>
 		<h3> enemy info </h3>
 		<span><img id='selectedEnemy' src=''></span>
 		<h3> enemy health: <span id='enemyHealth'></span> </h3>
-		<button id='endTurn' onclick='enemyTurn()'> end turn </button>
+		<br>
 	</div>
+	
+	<div id='title'>
+		<h3> war game idea </h3>
+		<p> click on the cat on the grid to move. </p>
+		<p> click on an adjacent enemy unit to do damage, or on any enemy unit to get info. </p> 
+		<p> click on 'draw cards' to get some new abilities. </p>
+		<p>'end turn' causes the enemies to move and possibly do damage to you. </p>
+	</div>
+	
 	<div id='playerOptions'>
 		<h3> player info </h3>
 		<span><img src='nyasu7.png' id='player' width='100px' height='90px'></img></span> 
 		<h3> player's health: <span id='playerHealth'> 100 </span></h3>
 		<button id='drawCards' onclick='drawCards()'> draw cards </button>
+		<button id='endTurn' onclick='enemyTurn()'> end turn </button>
 	</div>
 </div>
 
@@ -128,7 +134,7 @@
 </div>
 
 <div id='footer'>
-	<p> here is the <a href='https://github.com/syncopika/war_games'>source</a> </p>
+	<p> 2017 | <a href='https://github.com/syncopika/war_games'>source</a> </p>
 </div>
 
 </body>
@@ -140,6 +146,10 @@
 notes:
 
 there really should be an html attribute assigned to specify unit name/type. 
+
+BUGS:
+click on / unclick pancake sniper -> activate bear attack -> click on shiina -> shiina dead (this should not happen!)
+when activating bear attack, if any unit is currently selected it needs to be deselected!!! currentUnit needs to become null 
 
 ****/
 
