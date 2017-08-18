@@ -107,9 +107,13 @@ var card3 = new Card();
 card3.name = "bear attack";
 card3.image = "aoba6.png";
 card3.ability = function(){
+	
+	// MAKE SURE TO CLEAR THE CARD AFTER USING IT! CLEAR CHILD NODES FROM PARENT
+	console.log(this);
 	// launch a bear attack on a specified enemy unit 
 	// does 10 damage 
 	// make sure to show damage done and which unit
+	// NEED TO DISABLE MOVEUNIT() EXECUTION WHEN DOING THIS!
 
 	// clear the currentUnit in case some unit is selected while trying to implement attack
 	// don't forget possible ranged attack 
