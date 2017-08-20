@@ -14,7 +14,9 @@ function Card(){
 }
 
 /*****
+
 	create some cards 
+	
 ******/
 var card1 = new Card();
 card1.name = "complete domination";

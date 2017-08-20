@@ -39,7 +39,7 @@
 		background-image: url('mapedit.png');
 		background-size: 100% 100%;
 		padding: 0;
-		margin: 0;
+		margin: 0 auto;
 	}
 	#showCards{
 		display: block;
@@ -145,11 +145,7 @@
 
 notes:
 
-there really should be an html attribute assigned to specify unit name/type. 
-
-BUGS:
-click on / unclick pancake sniper -> activate bear attack -> click on shiina -> shiina dead (this should not happen!)
-when activating bear attack, if any unit is currently selected it needs to be deselected!!! currentUnit needs to become null 
+there should be an html attribute assigned to specify unit name/type. 
 
 ****/
 
@@ -161,15 +157,17 @@ var player = [];  // player's units
 
 /****   start game here  *****/
 // set up map 
-createGrid();
-initialState(36, 15);
+createGrid(36, 15); // width, height
+initialState(36, 15); // set boundaries of where units are placed 
 
 /******************************/
 
 
+
+
 /*****
 
-	initiate 1st state of game 
+	initiate first state of game 
 
 ******/
 function initialState(length, height){

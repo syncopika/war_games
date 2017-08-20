@@ -3,12 +3,21 @@
 /*****
 
 create the grid map 
+pass in the width as the number of cells wide the grid should be 
+pass in the height as in the number of rows the grid should have 
 
 ******/
-function createGrid(){
+function createGrid(width, height){
 
 	var parent = document.getElementById('grid');
 
+	console.log("width: " + window.innerWidth + " height: " + window.innerHeight)
+	
+	var w = Math.round(Math.floor(window.innerWidth / width) / 10) * 10; // calculate width of cell
+	var h = Math.round(Math.floor(window.innerHeight / height) / 10) * 8; // calculate height of cell
+	
+	console.log("w: " + w + " h: " + h)
+	
 	for(var i = 0; i < height; i++){
 		
 		var newRow = document.createElement('div');
@@ -17,12 +26,13 @@ function createGrid(){
 		newRow.style.padding = "0";
 		newRow.style.margin = "0";
 		
+		// if grid is 15 x 36, width per cell should be ~50, height ~40 
 		for(var j = 0; j < length; j++){
 
 			var newColumn = document.createElement('div');
 			newColumn.style.border = '1px solid #000';
-			newColumn.style.width = "50px";
-			newColumn.style.height = '40px';
+			newColumn.style.width = w + "px"; 
+			newColumn.style.height = h + "px"; 
 			newColumn.style.display = 'inline-block';
 			newColumn.style.backgroundSize = "100% 100%";
 			newColumn.id = 'column' + j;
