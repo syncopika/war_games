@@ -332,26 +332,47 @@ function moveUnit(element){
 
 /****
 
-	place enemy units in random locations 
-	
-****/
-function placeRandom(){
+	place unit in random location
 
-	var randomCol = Math.floor(Math.random() * (length-1));
-	var randomRow = Math.floor(Math.random() * (height-1));
+	leftBound and rightBound are parameters to determine the range of where to place unit
+	
+	@element = path to the picture file for the unit
+	@leftBound = column to start at
+	@rightBound = column to end at 
+	@topBound = top row boundary
+	@bottomBound = bottom row boundary
+	@stats = other information like className, id, health, attack, other html attributes in an associative array
+	
+	the bound params are INCLUSIVE
+****/
+function placeRandom(element, leftBound, rightBound, bottomBound, topBound, stats){
+
+	var randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
+	var randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
 	var randCell = getCell(randomRow, randomCol);
 	
 	while(randCell.style.backgroundImage !== ""){
-		randomCol = Math.floor(Math.random() * (length-1));
-		randomRow = Math.floor(Math.random() * (height-1));
+		randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
+		randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
 		randCell = getCell(randomRow, randomCol);
 	}
 	
-	randCell.setAttribute("health", 20);
-	randCell.setAttribute("attack", 5);
-	randCell.className = "enemy";
-	randCell.style.backgroundImage = "url('shiina2.png')";
-	enemies.push(randCell);
+	for(property in stats){
+		if(property === "className"){
+			randCell.className = stats[property];
+		}else{
+			randCell.setAttribute(property, stats[property]);
+		}
+	}
+
+	randCell.style.backgroundImage = "url(" + element + ")";
+	
+	// enemies need to be pushed into the enemies array
+	if(stats["className"] === "enemy"){
+		enemies.push(randCell);
+	}else if(stats["className"] === "player"){
+		player.push(randCell);
+	}
 }
 
 function getCell(row, col){

@@ -162,12 +162,8 @@ var player = [];  // player's units
 /****   start game here  *****/
 // set up map 
 createGrid();
-initialState();
+initialState(36, 15);
 
-// place enemy units in random locations
-for(var i = 0; i < 10; i++){
-	placeRandom();
-}
 /******************************/
 
 
@@ -176,49 +172,20 @@ for(var i = 0; i < 10; i++){
 	initiate 1st state of game 
 
 ******/
-function initialState(){
-
-	// this is for the player's state 
-	// get random row 
-	var randRow = Math.floor(Math.random() * height);
-	var randColumn = Math.floor(Math.random() * (length - 30)) + 30;
-	
-	var row = document.getElementById('row' + randRow);
-	var rowCells = row.childNodes;
+function initialState(length, height){
 	
 	// randomly place nyasu 
-	for(var i = 0; i < rowCells.length; i++){
-		if(rowCells[i].id === ("column" + randColumn)){
-			rowCells[i].style.backgroundImage = "url('nyasu7.png')";
-			//playerObject.location = rowCells[i];
-			// add stats for player unit 
-			rowCells[i].setAttribute("health", 100);
-			rowCells[i].setAttribute("attack", 20);
-			player.push(rowCells[i]);
-			break;
-		}
+	// function placeRandom(element, health, attack, leftBound, rightBound, bottomBound, topBound, stats)
+	placeRandom("nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player'});
+	
+	// place enemies 
+	for(var i = 0; i < 10; i++){
+		placeRandom("shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy'});
 	}
 	
-	// this is for the enemy's state 
-	// get random row 
-	var randRow = Math.floor(Math.random() * height);
-	var randColumn = Math.floor(Math.random() * ((length - 30)));
+	// place enemy boss
+	placeRandom("umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy'});
 	
-	var row = document.getElementById('row' + randRow);
-	var rowCells = row.childNodes;
-	
-	// randomly place umaruchan - enemy boss  
-	for(var i = 0; i < rowCells.length; i++){
-		if(rowCells[i].id === ("column" + randColumn)){
-			rowCells[i].className = "enemy";
-			rowCells[i].setAttribute("health", 50);
-			rowCells[i].setAttribute("attack", 5);
-			rowCells[i].style.backgroundImage = "url('umaruchan.png')";
-			rowCells[i].style.backgroundSize = '100% 100%';
-			enemies.push(rowCells[i]);
-			break;
-		}
-	}
 }
 
 // add event listener to document to be able to click on enemy units and get some info 
