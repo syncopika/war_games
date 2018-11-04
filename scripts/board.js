@@ -17,6 +17,7 @@ function createGrid(width, height){
 	var h = Math.round(Math.floor(window.innerHeight / height) / 10) * 8; // calculate height of cell
 	
 	console.log("w: " + w + " h: " + h)
+	parent.style.padding = "5px";
 	
 	for(var i = 0; i < height; i++){
 		
@@ -34,6 +35,7 @@ function createGrid(width, height){
 			newColumn.style.width = w + "px"; 
 			newColumn.style.height = h + "px"; 
 			newColumn.style.display = 'inline-block';
+			newColumn.style.verticalAlign = "middle";
 			newColumn.style.backgroundSize = "100% 100%";
 			newColumn.id = 'column' + j;
 			newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
@@ -64,6 +66,13 @@ function activeObject(currElement){
 	if(!player.includes(currElement)){
 		return;
 	}
+	
+	// update header in top of page to show current unit selected and current health
+	// this makes some assumptions of the id's of the relevant elements in the header 
+	var imgUrl = currElement.style.backgroundImage; // need to eliminate the 'url()' part from the string 
+	imgUrl = imgUrl.substring(imgUrl.indexOf('"')+1, imgUrl.indexOf(')')-1);  // note that this means the actual file path should not have quotes or parentheses!
+	document.getElementById('player').setAttribute('src', imgUrl);
+	document.getElementById('playerHealth').textContent = currElement.getAttribute("health");
 
 	// what kind of unit is it?
 	if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 0){
@@ -78,7 +87,7 @@ function activeObject(currElement){
 		currentUnit = currElement;
 		
 		// if special unit, show attack paths 
-		if(currElement.style.backgroundImage === 'url("alolanRaichu.png")'){
+		if(currElement.getAttribute("unitType") === 'range2'){
 			var attackRange = getAttackRange(currElement, 2);
 			for(path in attackRange){
 				if(attackRange[path]){
@@ -88,6 +97,7 @@ function activeObject(currElement){
 		}
 		
 	}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 1){
+		// this is deselecting a unit 
 		var elementPaths = getPathsDefault(currElement);
 		for(key in elementPaths){
 			if(elementPaths[key]){
@@ -96,8 +106,8 @@ function activeObject(currElement){
 			}
 		}
 		
-		// if special unit, un-highlight attack paths 
-		if(currElement.style.backgroundImage === 'url("alolanRaichu.png")'){
+		// if special unit, un-highlight attack paths also
+		if(currElement.getAttribute("unitType") === 'range2'){
 			var attackRange = getAttackRange(currElement, 2);
 			for(path in attackRange){
 				if(attackRange[path]){
@@ -232,22 +242,28 @@ function getAttackRange(element, distance){
 
 	move player's units 
 
+	pass in the DOM element you want to move to 
+	
 ******/
-// pass in the DOM element you want to move to 
 function moveUnit(element){
+	
+	if(currentUnit == null){
+		return;
+	}
 	
 	// if square is highlighted or red (#FF1919) (for ranged units like raichu)
 	if(element.style.border === '1px solid rgb(221, 223, 255)' || element.style.border === '1px solid rgb(255, 25, 25)'){
+		
 		// red squares only indicate attack range, not movement, so don't allow movement there 
 		if(element.style.backgroundImage === "" &&  element.style.border !== '1px solid rgb(255, 25, 25)'){
 		
 			// for ranged units
 			// clear the red highlight
-			if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+			if(currentUnit.getAttribute("unitType") === 'range2'){
 				// we can assume the current unit is a ranged attacker
 				// we can't assume what the range is, so the range ought to be another html attribute 
 				var attackRange = getAttackRange(currentUnit, 2);
-				//console.log(attackRange);
+
 				for(path in attackRange){
 					if(attackRange[path]){
 						attackRange[path].style.border = "1px solid #000";
@@ -259,9 +275,11 @@ function moveUnit(element){
 			element.style.backgroundImage = currentUnit.style.backgroundImage;
 			element.setAttribute("health", currentUnit.getAttribute("health"));
 			element.setAttribute("attack", currentUnit.getAttribute("attack"));
+			element.setAttribute("unitType", currentUnit.getAttribute("unitType"));
 			
 			// clear old data for currentUnit
 			currentUnit.style.backgroundImage = "";
+			currentUnit.setAttribute("unitType", null);
 			currentUnit.setAttribute("health", null);
 			currentUnit.setAttribute("attack", null)
 			
@@ -293,7 +311,7 @@ function moveUnit(element){
 				enemies.splice(enemies.indexOf(element), 1);
 				
 				// obliterate enemy 
-				if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+				if(currentUnit.getAttribute("unitType") === 'range2'){
 					$('#grid').effect("bounce");
 				}else{
 					$('#grid').effect("shake");
@@ -303,8 +321,9 @@ function moveUnit(element){
 				element.style.backgroundImage = "";
 				element.setAttribute("health", null);
 				element.setAttribute("attack", null);
+				element.setAttribute("unitType", null);
 			}else{
-				if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+				if(currentUnit.getAttribute("unitType") === 'range2'){
 					$('#grid').effect("bounce");
 				}else{
 					$('#grid').effect("shake");
@@ -323,11 +342,11 @@ function moveUnit(element){
 					
 			// for ranged units
 			// clear the red highlight
-			if(currentUnit.style.backgroundImage === 'url("alolanRaichu.png")'){
+			if(currentUnit.getAttribute("unitType") === 'range2'){
 				// we can assume the current unit is a ranged attacker
 				// we can't assume what the range is, so the range ought to be another html attribute 
 				var attackRange = getAttackRange(currentUnit, 2);
-				console.log(attackRange);
+				//console.log(attackRange);
 				for(path in attackRange){
 					if(attackRange[path]){
 						attackRange[path].style.border = "1px solid #000";

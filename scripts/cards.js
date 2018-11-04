@@ -57,25 +57,38 @@ card2.ability = function(){
 	}
 	
 	function validSpace(e){
-		//var row = parseInt( e.target.parentNode.id.match(/\d+/)[0] );
-		var col = parseInt( e.target.id.match(/\d+/)[0] );
-		// come up with a separate function to determine whether a square is within player territory
-		if(col > 32){
-			// highlight spot
-			e.target.style.border = "1px solid rgb(221, 223, 255)";
-			
+
+		var findDigit = e.target.id.match(/\d+/);
+		
+		if(findDigit !== null){
+			var col = parseInt( e.target.id.match(/\d+/)[0] );
+		
+			// come up with a separate function to determine whether a square is within player territory
+			if(col > 32){
+				// highlight spot because this is a valid place to place unit
+				e.target.style.border = "1px solid rgb(221, 223, 255)";
+			}
 		}
+		
 	}
 	
 	function leaveSpace(e){
-		//var row = parseInt( e.target.parentNode.id.match(/\d+/)[0] );
-		var col = parseInt( e.target.id.match(/\d+/)[0] );
-		// come up with a separate function to determine whether a square is within player territory
-		if(col > 32){
-			e.target.style.border = "1px solid #000";
-			
+		var findDigit = e.target.id.match(/\d+/);
+		if(findDigit !== null){
+			var col = parseInt( e.target.id.match(/\d+/)[0] );
+			// come up with a separate function to determine whether a square is within player territory
+			if(col > 32){
+				e.target.style.border = "1px solid #000";
+				
+			}
 		}
 	}
+	
+	// update header to show unit 
+	//var imgUrl = currElement.style.backgroundImage; // need to eliminate the 'url()' part from the string 
+	//imgUrl = imgUrl.substring(imgUrl.indexOf('"')+1, imgUrl.indexOf(')')-1);  // note that this means the actual file path should not have quotes or parentheses!
+	//document.getElementById('player').setAttribute('src', imgUrl);
+	//document.getElementById('playerHealth').textContent = currElement.getAttribute("health");
 	
 	// need to disable clicking anything else other than a valid space after this card has been selected 
 	document.getElementById('grid').addEventListener('mouseover', validSpace);
@@ -90,6 +103,7 @@ card2.ability = function(){
 			e.target.style.backgroundImage = "url('" + "alolanRaichu.png" + "')";
 			e.target.setAttribute("health", 120);
 			e.target.setAttribute("attack", 70);
+			e.target.setAttribute("unitType", 'range2');
 			player.push(e.target);	// add new unit to player's units array
 			currentUnit = e.target;  // set as current unit 
 			

@@ -19,8 +19,6 @@
 		vertical-align: top;
 	}
 	body, html{
-		min-wdith: 100%;
-		min-height: 100%;
 		font-family: Arial;
 	}
 	#header{
@@ -174,15 +172,15 @@ function initialState(length, height){
 	
 	// randomly place nyasu 
 	// function placeRandom(element, health, attack, leftBound, rightBound, bottomBound, topBound, stats)
-	placeRandom("nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player'});
+	placeRandom("nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 	
 	// place enemies 
 	for(var i = 0; i < 10; i++){
-		placeRandom("shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy'});
+		placeRandom("shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 	}
 	
 	// place enemy boss
-	placeRandom("umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy'});
+	placeRandom("umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 	
 }
 
