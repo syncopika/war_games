@@ -7,9 +7,6 @@
 	<title> war game idea </title>
 	 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
-	<script src='scripts/cards.js'></script>
-	<script src='scripts/board.js'></script>
-	<script src='scripts/enemyAI.js'></script>
 </head>
 
 <style>
@@ -94,8 +91,8 @@
 		<h3> player info </h3>
 		<span><img src='nyasu7.png' id='player' width='100px' height='90px'></img></span> 
 		<h3> player's health: <span id='playerHealth'> 100 </span></h3>
-		<button id='drawCards' onclick='drawCards()'> draw cards </button>
-		<button id='endTurn' onclick='enemyTurn()'> end turn </button>
+		<button id='drawCards'> draw cards </button>
+		<button id='endTurn'> end turn </button>
 	</div>
 </div>
 
@@ -138,28 +135,63 @@
 </body>
 
 
-<script>
-/****
+<script type="module">
+// note: using modules enforces strict mode! 
+/*
+	notes:
+	there should be an html attribute assigned to specify unit name/type. 
+	
+	TODO:
 
-notes:
+	- UPDATE enemyAI.js 
+	- attach enemyAI functions to button via eventListener, not in line 
+	- create separate modules for each unique card 
+	- bundle modules to import as one? 
+	- use typescript to generate classes for card and deck 
+	
+*/
 
-there should be an html attribute assigned to specify unit name/type. 
+import { Game } from "./scripts/Game.js";
+import { enemyMovement } from "./scripts/enemyAI.js";
+import { CompleteDomination } from "./scripts/cards/card1.js";
+import { PancakeSniper } from "./scripts/cards/card2.js";
+import { BearAttack } from "./scripts/cards/card3.js";
 
-****/
-
-var length = 36;
-var height = 15;
-var currentUnit = null;  // DOM element of clicked on unit 
-var enemies = []; // DOM element locations of all enemies go here 
-var player = [];  // player's units
 
 /****   start game here  *****/
+
 // set up map 
-createGrid(36, 15); // width, height
-initialState(36, 15); // set boundaries of where units are placed 
+let length = 36;
+let height = 15;
 
-/******************************/
+let gameInstance = new Game();
+gameInstance.createGrid(length, height);
 
+
+// set up units initially 
+initialState(length, height);
+
+
+// hook up end turn button with enemyTurn function 
+document.getElementById('endTurn').addEventListener('click', function(){
+	gameInstance.enemyTurn(enemyMovement);
+});
+
+
+// load player's deck 
+let playerDeck = gameInstance.playerDeck();
+playerDeck.add(BearAttack);
+playerDeck.add(CompleteDomination);
+playerDeck.add(PancakeSniper);
+
+
+// hook up end draw cards button with drawCards function 
+document.getElementById('drawCards').addEventListener('click', function(){
+	gameInstance.playerDeck().drawCards(gameInstance);
+});
+
+
+/***************************/
 
 
 
@@ -172,15 +204,15 @@ function initialState(length, height){
 	
 	// randomly place nyasu 
 	// function placeRandom(element, health, attack, leftBound, rightBound, bottomBound, topBound, stats)
-	placeRandom("nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+	gameInstance.placeRandom("nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 	
 	// place enemies 
-	for(var i = 0; i < 10; i++){
-		placeRandom("shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
+	for(let i = 0; i < 10; i++){
+		gameInstance.placeRandom("shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 	}
 	
 	// place enemy boss
-	placeRandom("umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
+	gameInstance.placeRandom("umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 	
 }
 
@@ -191,28 +223,15 @@ function initialState(length, height){
 // 'selectedEnemy' attribute if it was that enemy. 
 document.addEventListener('click', function(e){
 	if(e.target.className === "enemy"){
-		var start = e.target.style.backgroundImage.indexOf("(") + 2;  // inclusive 
-		var end = e.target.style.backgroundImage.indexOf(")") - 1;   // not inclusive
-		var imgSrc = e.target.style.backgroundImage.substring(start, end);
+		let start = e.target.style.backgroundImage.indexOf("(") + 2;  // inclusive 
+		let end = e.target.style.backgroundImage.indexOf(")") - 1;   // not inclusive
+		let imgSrc = e.target.style.backgroundImage.substring(start, end);
 		document.getElementById('selectedEnemy').setAttribute('src', imgSrc);
 		document.getElementById('selectedEnemy').setAttribute('width', 100);
 		document.getElementById('selectedEnemy').setAttribute('height', 90);
 		document.getElementById('enemyHealth').textContent = e.target.getAttribute("health");
 	}
 });
-
-
-/*****
-	
-	enemy's turn 
-	
-******/
-function enemyTurn(){
-	for(var i = 0; i < enemies.length; i++){
-		enemyMovement(enemies[i]);
-	}
-	alert('enemy ended turn');
-}
 
 	
 </script>

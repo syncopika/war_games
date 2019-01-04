@@ -1,0 +1,63 @@
+// utility functions that do general things
+// since functions in my enemy AI file and my Game file need to use these functions, they're here 
+
+/*****
+	default path option
+	get the top, bottom, left, and right cells of clicked-on unit 
+*******/
+function getPathsDefault(element){
+	// this element will return the top, bottom, left and right blocks
+	let paths = {};
+	
+	// get the parent of this element. this element should be a column cell, so the parent will be the row
+	let row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
+	let column = parseInt(element.id.match(/\d+/g)[0]);
+	
+	// top coordinate is row - 1, same column num
+	// bottom coord is row + 1, same column num
+	// left coord is column num - 1, same row 
+	// right coord is column num + 1, same row 
+
+	if(element.parentNode.previousSibling){	
+		let previousRow = element.parentNode.previousSibling.childNodes;
+		for(let i = 0; i < previousRow.length; i++){
+			if(previousRow[i].id.match(/\d+/g)[0] == column){
+				paths['top'] = previousRow[i];
+				break;
+			}
+		}
+	}else{
+		paths['top'] = null;
+	}
+	
+	if(element.parentNode.nextSibling){
+		let nextRow = element.parentNode.nextSibling.childNodes;
+		for(let i = 0; i < nextRow.length; i++){
+			if(nextRow[i].id.match(/\d+/g)[0] == column){
+				paths['bottom'] = nextRow[i];
+				break;
+			}
+		}
+	}else{
+		paths['bottom'] = null;
+	}
+	
+	paths['left'] = element.previousSibling;
+	paths['right'] = element.nextSibling;
+	
+	return paths;
+}
+
+
+function getCell(row, col){
+	// changing let to var here stopped Chrome from complaining. why?
+	var row = document.getElementById('row' + row).childNodes;
+	for(let i = 0; i < row.length; i++){
+		if(row[i].id === 'column' + col){
+			return row[i];
+		}
+	}
+	return null;
+}
+
+export { getPathsDefault, getCell };
