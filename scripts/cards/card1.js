@@ -8,7 +8,7 @@ CompleteDomination.image = "../../mikudayo.png";
 CompleteDomination.ability = function(gameInstance){
 	// wipe out all enemies 
 	let enemyUnits = gameInstance.enemyUnits();
-	for(let i = 0; i < enemy.length; i++){
+	for(let i = 0; i < enemyUnits.length; i++){
 		$('#grid').effect("shake");
 		enemyUnits[i].style.backgroundImage = "";
 		enemyUnits[i].classList.remove("enemy");
