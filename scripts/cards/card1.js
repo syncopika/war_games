@@ -4,7 +4,7 @@ import { Card } from '../Card.js';
 const CompleteDomination = new Card();
 
 CompleteDomination.name = "complete domination";
-CompleteDomination.image = "../../mikudayo.png";
+CompleteDomination.image = "mikudayo.png";
 CompleteDomination.ability = function(gameInstance){
 	// wipe out all enemies 
 	let enemyUnits = gameInstance.enemyUnits();
