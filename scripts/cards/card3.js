@@ -26,7 +26,7 @@ BearAttack.ability = function(gameInstance){
 			}
 		}
 		
-		let attackRange = getAttackRange(currentUnit, 2); // this uses a function that's inaccessible!!!
+		let attackRange = gameInstance.getAttackRange(currentUnit, 2);
 		for(let path in attackRange){
 			if(attackRange[path]){
 				attackRange[path].style.border = "1px solid #000";

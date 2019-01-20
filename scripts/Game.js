@@ -159,71 +159,6 @@ function Game(){
 		alert('enemy ended turn');
 	}
 	
-		
-	/****
-		show paths when click on unit
-	****/
-	function activeObject(currElement, playerList){
-
-		// only the player can select/move their own units 
-		if(!playerList.includes(currElement)){
-			return;
-		}
-		
-		// update header in top of page to show current unit selected and current health
-		// this makes some assumptions of the id's of the relevant elements in the header 
-		let imgUrl = currElement.style.backgroundImage; // need to eliminate the 'url()' part from the string 
-		imgUrl = imgUrl.substring(imgUrl.indexOf('"')+1, imgUrl.indexOf(')')-1);  // note that this means the actual file path should not have quotes or parentheses!
-		document.getElementById('player').setAttribute('src', imgUrl);
-		document.getElementById('playerHealth').textContent = currElement.getAttribute("health");
-
-		// what kind of unit is it?
-		if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 0){
-			// light up the paths 
-			let elementPaths = getPathsDefault(currElement);
-			for(let key in elementPaths){
-				if(elementPaths[key]){
-					elementPaths[key].style.border = "1px solid #dddfff";
-				}
-			}
-			currElement.setAttribute('pathLight', 1);
-			currentUnit = currElement;
-			
-			// if special unit, show attack paths 
-			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = getAttackRange(currElement, 2);
-				for(let path in attackRange){
-					if(attackRange[path]){
-						attackRange[path].style.border = "1px solid #FF1919";
-					}
-				}
-			}
-			
-		}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 1){
-			// this is deselecting a unit 
-			let elementPaths = getPathsDefault(currElement);
-			for(let key in elementPaths){
-				if(elementPaths[key]){
-					elementPaths[key].style.border = "1px solid #000";
-					//elementPaths[key].style.backgroundColor = "transparent";
-				}
-			}
-			
-			// if special unit, un-highlight attack paths also
-			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = getAttackRange(currElement, 2);
-				for(let path in attackRange){
-					if(attackRange[path]){
-						attackRange[path].style.border = "1px solid #000";
-					}
-				}
-			}
-			
-			currElement.setAttribute('pathLight', 0);
-			currentUnit = null;
-		}
-	}
-
 	/*****
 
 		get attack range of unit 
@@ -291,6 +226,73 @@ function Game(){
 		}
 		
 		return paths;
+	}
+	// make function accessible from the outside as well
+	this.getAttackRange = getAttackRange;
+	
+		
+	/****
+		show paths when click on unit
+	****/
+	function activeObject(currElement, playerList){
+
+		// only the player can select/move their own units 
+		if(!playerList.includes(currElement)){
+			return;
+		}
+		
+		// update header in top of page to show current unit selected and current health
+		// this makes some assumptions of the id's of the relevant elements in the header 
+		let imgUrl = currElement.style.backgroundImage; // need to eliminate the 'url()' part from the string 
+		imgUrl = imgUrl.substring(imgUrl.indexOf('"')+1, imgUrl.indexOf(')')-1);  // note that this means the actual file path should not have quotes or parentheses!
+		document.getElementById('player').setAttribute('src', imgUrl);
+		document.getElementById('playerHealth').textContent = currElement.getAttribute("health");
+
+		// what kind of unit is it?
+		if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 0){
+			// light up the paths 
+			let elementPaths = getPathsDefault(currElement);
+			for(let key in elementPaths){
+				if(elementPaths[key]){
+					elementPaths[key].style.border = "1px solid #dddfff";
+				}
+			}
+			currElement.setAttribute('pathLight', 1);
+			currentUnit = currElement;
+			
+			// if special unit, show attack paths 
+			if(currElement.getAttribute("unitType") === 'range2'){
+				let attackRange = getAttackRange(currElement, 2);
+				for(let path in attackRange){
+					if(attackRange[path]){
+						attackRange[path].style.border = "1px solid #FF1919";
+					}
+				}
+			}
+			
+		}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 1){
+			// this is deselecting a unit 
+			let elementPaths = getPathsDefault(currElement);
+			for(let key in elementPaths){
+				if(elementPaths[key]){
+					elementPaths[key].style.border = "1px solid #000";
+					//elementPaths[key].style.backgroundColor = "transparent";
+				}
+			}
+			
+			// if special unit, un-highlight attack paths also
+			if(currElement.getAttribute("unitType") === 'range2'){
+				let attackRange = getAttackRange(currElement, 2);
+				for(let path in attackRange){
+					if(attackRange[path]){
+						attackRange[path].style.border = "1px solid #000";
+					}
+				}
+			}
+			
+			currElement.setAttribute('pathLight', 0);
+			currentUnit = null;
+		}
 	}
 
 
