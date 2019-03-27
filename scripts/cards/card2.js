@@ -1,12 +1,10 @@
-import { Card } from '../Card.js';
+import Card  from '../Card.js';
 import { getPathsDefault } from './../Utils.js';
 
-const PancakeSniper = new Card();
-PancakeSniper.name = "pancake sniper";
-PancakeSniper.image = "alolanRaichu.png";
-
-
-PancakeSniper.ability = function(gameInstance){
+const PancakeSniper = new Card(
+"pancake sniper", 
+"alolanRaichu.png",
+ function(gameInstance){
 	// place a pancake sniper aka alolan raichu on the field 
 	// https://stackoverflow.com/questions/4402287/javascript-remove-event-listener
 	
@@ -88,7 +86,8 @@ PancakeSniper.ability = function(gameInstance){
 			document.getElementById('grid').removeEventListener('click', placeUnit); 
 		}
 	});
-}
-PancakeSniper.description = "a floating electric mouse that has pancakes. after clicking 'activate', select a cell from any of the first three columns from the right to place a new unit. red highlighted squares indicate its attack range";
+},
+"a floating electric mouse that has pancakes. after clicking 'activate', select a cell from any of the first three columns from the right to place a new unit. red highlighted squares indicate its attack range"
+);
 
 export { PancakeSniper };

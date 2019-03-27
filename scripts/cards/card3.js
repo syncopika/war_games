@@ -1,10 +1,10 @@
-import { Card } from '../Card.js';
+import Card  from '../Card.js';
 import { getPathsDefault } from './../Utils.js';
 
-const BearAttack = new Card();
-BearAttack.name = "bear attack";
-BearAttack.image = "aoba6.png";
-BearAttack.ability = function(gameInstance){
+const BearAttack = new Card(
+"bear attack",
+"aoba6.png",
+function(gameInstance){
 	
 	let currentUnit = gameInstance.currentUnit();
 	let enemies = gameInstance.enemyUnits();
@@ -79,7 +79,8 @@ BearAttack.ability = function(gameInstance){
 			document.getElementById('grid').removeEventListener('click', attack); 
 		}
 	});
-}
-BearAttack.description = "launch a bear attack on your favorite enemy.  after clicking 'activate', select one enemy unit to inflict 10 damage.";
+},
+"launch a bear attack on your favorite enemy.  after clicking 'activate', select one enemy unit to inflict 10 damage."
+);
 
 export { BearAttack };

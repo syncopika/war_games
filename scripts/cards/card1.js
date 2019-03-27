@@ -1,11 +1,7 @@
 // card name: completeDomination
-import { Card } from '../Card.js';
+import  Card  from '../Card.js';
 
-const CompleteDomination = new Card();
-
-CompleteDomination.name = "complete domination";
-CompleteDomination.image = "mikudayo.png";
-CompleteDomination.ability = function(gameInstance){
+const CompleteDomination = new Card( "complete domination", "mikudayo.png", function(gameInstance){
 	// wipe out all enemies 
 	let enemyUnits = gameInstance.enemyUnits();
 	for(let i = 0; i < enemyUnits.length; i++){
@@ -16,7 +12,8 @@ CompleteDomination.ability = function(gameInstance){
 		enemyUnits[i].setAttribute('attack', null);
 	}
 	gameInstance.clearEnemyUnits();
-};
-CompleteDomination.description = "mikudayo wipes out all enemies. yay";
+},
+"mikudayo wipes out all enemies. yay"
+);
 
 export { CompleteDomination };

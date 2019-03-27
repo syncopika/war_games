@@ -62,9 +62,10 @@ function Game(){
 		console.log("w: " + w + " h: " + h)
 		parent.style.padding = "5px";
 		
+		let table = document.createElement('table');
+		
 		for(let i = 0; i < height; i++){
-			
-			let newRow = document.createElement('div');
+			let newRow = document.createElement('tr');
 			newRow.style.width = "100%";
 			newRow.id = 'row' + i;
 			newRow.style.padding = "0";
@@ -73,12 +74,12 @@ function Game(){
 			// if grid is 15 x 36, width per cell should be ~50, height ~40 
 			for(let j = 0; j < width; j++){
 
-				let newColumn = document.createElement('div');
+				let newColumn = document.createElement('td');
 				newColumn.style.border = '1px solid #000';
 				newColumn.style.width = w + "px"; 
 				newColumn.style.height = h + "px"; 
-				newColumn.style.display = 'inline-block';
-				newColumn.style.verticalAlign = "middle";
+				//newColumn.style.display = 'inline-block';
+				//newColumn.style.verticalAlign = "middle";
 				newColumn.style.backgroundSize = "100% 100%";
 				newColumn.id = 'column' + j;
 				newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
@@ -95,8 +96,11 @@ function Game(){
 				
 				newRow.appendChild(newColumn);
 			}
-			parent.appendChild(newRow);
+			table.appendChild(newRow);
 		}
+		
+		parent.appendChild(table);
+		
 	}
 
 	
