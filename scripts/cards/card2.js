@@ -8,8 +8,8 @@ const PancakeSniper = new Card(
 	// place a pancake sniper aka alolan raichu on the field 
 	// https://stackoverflow.com/questions/4402287/javascript-remove-event-listener
 	
-	let currentUnit = gameInstance.currentUnit();
-	let player = gameInstance.playerUnits();
+	let currentUnit = gameInstance.currentUnit;
+	let player = gameInstance.playerUnits;
 	
 	// after picking this ability, the unit needs to be placed immediately
 	// therefore, if there was a unit selected right before clicking this ability,
@@ -23,7 +23,7 @@ const PancakeSniper = new Card(
 			}
 		}
 		currentUnit.setAttribute('pathLight', 0);
-		gameInstance.setCurrentUnit(null);
+		gameInstance.currentUnit = null;
 	}
 	
 	function validSpace(e){

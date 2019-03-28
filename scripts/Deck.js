@@ -27,7 +27,7 @@ function Deck(){
 	// @gameInstance = instance of Game object 
 	this.drawCards = function(gameInstance){
 		
-		let deck = gameInstance.playerDeck();
+		let deck = gameInstance.playerDeck;
 		
 		if(deck.length === 0){
 			return;

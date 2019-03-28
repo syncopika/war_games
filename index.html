@@ -182,7 +182,7 @@ document.getElementById('endTurn').addEventListener('click', function(){
 
 
 // load player's deck 
-let playerDeck = gameInstance.playerDeck();
+let playerDeck = gameInstance.playerDeck;
 playerDeck.add(BearAttack);
 playerDeck.add(CompleteDomination);
 playerDeck.add(PancakeSniper);
@@ -190,7 +190,7 @@ playerDeck.add(PancakeSniper);
 
 // hook up end draw cards button with drawCards function 
 document.getElementById('drawCards').addEventListener('click', function(){
-	gameInstance.playerDeck().drawCards(gameInstance);
+	gameInstance.playerDeck.drawCards(gameInstance);
 });
 
 

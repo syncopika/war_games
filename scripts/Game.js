@@ -1,46 +1,23 @@
 import { getPathsDefault, getCell } from './Utils.js';
 import { Deck } from './Deck.js';
 
-function Game(){
-
-	const playerUnits = [];
-	const enemyUnits = [];
+class Game {
+	constructor(){
+		this.playerUnits = [];
+		this.enemyUnits = [];
 	
-	const playerDeck = new Deck();
-	const enemyDeck = new Deck();
+		this.playerDeck = new Deck();
+		this.enemyDeck = new Deck();
 	
-	let currentUnit = null;
-	
-	this.playerUnits = function(){
-		return playerUnits;
+		this.currentUnit = null;
 	}
 	
-	this.enemyUnits = function(){
-		return enemyUnits;
+	clearEnemyUnits(){
+		this.enemyUnits.splice(0, this.playerUnits.length);
 	}
 	
-	this.clearEnemyUnits = function(){
-		enemyUnits.splice(0, playerUnits.length);
-	}
-	
-	this.clearPlayerUnits = function(){
-		playerUnits.splice(0, playerUnits.length);
-	}
-	
-	this.playerDeck = function(){
-		return playerDeck;
-	}
-	
-	this.enemyDeck = function(){
-		return enemyDeck();
-	}
-	
-	this.currentUnit = function(){
-		return currentUnit;
-	}
-	
-	this.setCurrentUnit = function(newUnit){
-		currentUnit = newUnit;
+	clearPlayerUnits(){
+		this.playerUnits.splice(0, this.playerUnits.length);
 	}
 	
 	/*****
@@ -50,11 +27,13 @@ function Game(){
 		pass in the height as in the number of rows the grid should have 
 
 	******/
-	this.createGrid = function(width, height){
+	createGrid(width, height){
+		
+		let thisGameInstance = this;
 
 		let parent = document.getElementById('grid');
 
-		console.log("width: " + window.innerWidth + " height: " + window.innerHeight)
+		//console.log("width: " + window.innerWidth + " height: " + window.innerHeight)
 		
 		let w = Math.round(Math.floor(window.innerWidth / width) / 10) * 10; // calculate width of cell
 		let h = Math.round(Math.floor(window.innerHeight / height) / 10) * 8; // calculate height of cell
@@ -85,14 +64,11 @@ function Game(){
 				newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
 
 				// bind click event to highlight paths 
-				newColumn.addEventListener('click', function(){
-					activeObject(this, playerUnits);
-				});
+				newColumn.addEventListener('click', () => { thisGameInstance.activeObject(newColumn, thisGameInstance.playerUnits); });
+				//newColumn.addEventListener('click', function(){ thisGameInstance.activeObject(this, thisGameInstance.playerUnits); });   //note the difference from the arrow function!
 				
 				// bind click event to move unit 
-				newColumn.addEventListener('click', function(){
-					moveUnit(this);
-				});
+				newColumn.addEventListener('click', () => {thisGameInstance.moveUnit(newColumn); });
 				
 				newRow.appendChild(newColumn);
 			}
@@ -120,7 +96,7 @@ function Game(){
 		
 		the bound params are INCLUSIVE
 	****/
-	this.placeRandom = function(element, leftBound, rightBound, bottomBound, topBound, stats){
+	placeRandom(element, leftBound, rightBound, bottomBound, topBound, stats){
 
 		let randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
 		let randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
@@ -144,9 +120,9 @@ function Game(){
 		
 		// enemyUnits need to be pushed into the enemyUnits array
 		if(stats["className"] === "enemy"){
-			enemyUnits.push(randCell);
+			this.enemyUnits.push(randCell);
 		}else if(stats["className"] === "player"){
-			playerUnits.push(randCell);
+			this.playerUnits.push(randCell);
 		}
 	}
 	
@@ -156,9 +132,9 @@ function Game(){
 		@enemyAI = a function that tells each enemy unit how to move 
 	
 	******/
-	this.enemyTurn = function(enemyAI){
-		for(let i = 0; i < enemyUnits.length; i++){
-			enemyAI(enemyUnits[i], enemyUnits, playerUnits);
+	enemyTurn(enemyAI){
+		for(let i = 0; i < this.enemyUnits.length; i++){
+			enemyAI(this.enemyUnits[i], this.enemyUnits, this.playerUnits);
 		}
 		alert('enemy ended turn');
 	}
@@ -168,7 +144,7 @@ function Game(){
 		get attack range of unit 
 		
 	*******/
-	function getAttackRange(element, distance){
+	getAttackRange(element, distance){
 		// this element will return the top, bottom, left and right blocks
 		let paths = {};
 		
@@ -232,18 +208,21 @@ function Game(){
 		return paths;
 	}
 	// make function accessible from the outside as well
-	this.getAttackRange = getAttackRange;
+	//this.getAttackRange = getAttackRange;
 	
 		
 	/****
-		show paths when click on unit
+	
+		show paths when clicking on unit
+		
 	****/
-	function activeObject(currElement, playerList){
+	activeObject(currElement, playerList){
 
 		// only the player can select/move their own units 
 		if(!playerList.includes(currElement)){
 			return;
 		}
+		
 		
 		// update header in top of page to show current unit selected and current health
 		// this makes some assumptions of the id's of the relevant elements in the header 
@@ -262,11 +241,11 @@ function Game(){
 				}
 			}
 			currElement.setAttribute('pathLight', 1);
-			currentUnit = currElement;
+			this.currentUnit = currElement;
 			
 			// if special unit, show attack paths 
 			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = getAttackRange(currElement, 2);
+				let attackRange = this.getAttackRange(currElement, 2);
 				for(let path in attackRange){
 					if(attackRange[path]){
 						attackRange[path].style.border = "1px solid #FF1919";
@@ -307,9 +286,9 @@ function Game(){
 		pass in the DOM element you want to move to 
 		
 	******/
-	function moveUnit(element){
+	moveUnit(element){
 		
-		if(currentUnit == null){
+		if(this.currentUnit == null){
 			return;
 		}
 		
@@ -321,10 +300,10 @@ function Game(){
 			
 				// for ranged units
 				// clear the red highlight
-				if(currentUnit.getAttribute("unitType") === 'range2'){
+				if(this.currentUnit.getAttribute("unitType") === 'range2'){
 					// we can assume the current unit is a ranged attacker
 					// we can't assume what the range is, so the range ought to be another html attribute 
-					let attackRange = getAttackRange(currentUnit, 2);
+					let attackRange = this.getAttackRange(this.currentUnit, 2);
 
 					for(let path in attackRange){
 						if(attackRange[path]){
@@ -334,18 +313,18 @@ function Game(){
 				}
 			
 				// move the unit there 
-				element.style.backgroundImage = currentUnit.style.backgroundImage;
-				element.setAttribute("health", currentUnit.getAttribute("health"));
-				element.setAttribute("attack", currentUnit.getAttribute("attack"));
-				element.setAttribute("unitType", currentUnit.getAttribute("unitType"));
+				element.style.backgroundImage = this.currentUnit.style.backgroundImage;
+				element.setAttribute("health", this.currentUnit.getAttribute("health"));
+				element.setAttribute("attack", this.currentUnit.getAttribute("attack"));
+				element.setAttribute("unitType", this.currentUnit.getAttribute("unitType"));
 				
 				// clear old data for currentUnit
-				currentUnit.style.backgroundImage = "";
-				currentUnit.setAttribute("unitType", null);
-				currentUnit.setAttribute("health", null);
-				currentUnit.setAttribute("attack", null)
+				this.currentUnit.style.backgroundImage = "";
+				this.currentUnit.setAttribute("unitType", null);
+				this.currentUnit.setAttribute("health", null);
+				this.currentUnit.setAttribute("attack", null)
 				
-				let currUnitPaths = getPathsDefault(currentUnit);
+				let currUnitPaths = getPathsDefault(this.currentUnit);
 				for(let key in currUnitPaths){
 					if(currUnitPaths[key]){
 						currUnitPaths[key].style.border = "1px solid #000";
@@ -353,27 +332,27 @@ function Game(){
 				}
 			
 				// update player array 
-				for(let i = 0; i < playerUnits.length; i++){
-					if(playerUnits[i] === currentUnit){
-						playerUnits[i] = element;
+				for(let i = 0; i < this.playerUnits.length; i++){
+					if(this.playerUnits[i] === this.currentUnit){
+						this.playerUnits[i] = element;
 						break;
 					}
 				}
 				
 				// set currentUnit to new location
-				currentUnit = element;
+				this.currentUnit = element;
 			}
 			
 			// if cell to move in is an enemy unit 
 			if(element.className === "enemy"){
 				// do damage
-				let damage = element.getAttribute("health") - currentUnit.getAttribute("attack");
+				let damage = element.getAttribute("health") - this.currentUnit.getAttribute("attack");
 				if(damage <= 0){
 					// remove from enemyUnits array 
-					enemyUnits.splice(enemyUnits.indexOf(element), 1);
+					this.enemyUnits.splice(this.enemyUnits.indexOf(element), 1);
 					
 					// obliterate enemy 
-					if(currentUnit.getAttribute("unitType") === 'range2'){
+					if(this.currentUnit.getAttribute("unitType") === 'range2'){
 						$('#grid').effect("bounce");
 					}else{
 						$('#grid').effect("shake");
@@ -385,7 +364,7 @@ function Game(){
 					element.setAttribute("attack", null);
 					element.setAttribute("unitType", null);
 				}else{
-					if(currentUnit.getAttribute("unitType") === 'range2'){
+					if(this.currentUnit.getAttribute("unitType") === 'range2'){
 						$('#grid').effect("bounce");
 					}else{
 						$('#grid').effect("shake");
@@ -394,20 +373,20 @@ function Game(){
 					element.setAttribute("health", damage);
 				}
 
-				let currUnitPaths = getPathsDefault(currentUnit);
+				let currUnitPaths = getPathsDefault(this.currentUnit);
 				for(let key in currUnitPaths){
 					if(currUnitPaths[key]){
 						currUnitPaths[key].style.border = "1px solid #000";
 					}
 				}
-				currentUnit.setAttribute('pathLight', 0);
+				this.currentUnit.setAttribute('pathLight', 0);
 						
 				// for ranged units
 				// clear the red highlight
-				if(currentUnit.getAttribute("unitType") === 'range2'){
+				if(this.currentUnit.getAttribute("unitType") === 'range2'){
 					// we can assume the current unit is a ranged attacker
 					// we can't assume what the range is, so the range ought to be another html attribute 
-					let attackRange = getAttackRange(currentUnit, 2);
+					let attackRange = this.getAttackRange(this.currentUnit, 2);
 					//console.log(attackRange);
 					for(let path in attackRange){
 						if(attackRange[path]){

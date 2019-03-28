@@ -6,8 +6,8 @@ const BearAttack = new Card(
 "aoba6.png",
 function(gameInstance){
 	
-	let currentUnit = gameInstance.currentUnit();
-	let enemies = gameInstance.enemyUnits();
+	let currentUnit = gameInstance.currentUnit;
+	let enemies = gameInstance.enemyUnits;
 	
 	// MAKE SURE TO CLEAR THE CARD AFTER USING IT! CLEAR CHILD NODES FROM PARENT
 	//console.log(this);
@@ -35,7 +35,7 @@ function(gameInstance){
 		
 		// change pathLight so it will highlight when clicked on again 
 		currentUnit.setAttribute("pathLight", 0);
-		gameInstance.setCurrentUnit(null);
+		gameInstance.currentUnit = null;
 	}
 	
 	function selectEnemyOn(e){
