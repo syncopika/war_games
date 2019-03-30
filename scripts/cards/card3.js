@@ -3,7 +3,7 @@ import { getPathsDefault } from './../Utils.js';
 
 const BearAttack = new Card(
 "bear attack",
-"../../assets/aoba6.png",
+"./../../assets/aoba6.png",
 function(gameInstance){
 	
 	let currentUnit = gameInstance.currentUnit;
