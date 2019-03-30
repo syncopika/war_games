@@ -1,5 +1,6 @@
 import { getPathsDefault, getCell } from './Utils.js';
 import { Deck } from './Deck.js';
+import  {CurrentHand, CardDisplay} from './Hand.js';
 
 class Game {
 	constructor(){
@@ -8,6 +9,7 @@ class Game {
 	
 		this.playerDeck = new Deck();
 		this.enemyDeck = new Deck();
+		this.deckSize = 4;
 	
 		this.currentUnit = null;
 	}
@@ -20,6 +22,10 @@ class Game {
 		this.playerUnits.splice(0, this.playerUnits.length);
 	}
 	
+	setDeckSize(newSize){
+		this.deckSize = newSize;
+	}
+	
 	/*****
 
 		create the grid map 
@@ -27,11 +33,11 @@ class Game {
 		pass in the height as in the number of rows the grid should have 
 
 	******/
-	createGrid(width, height){
+	createGrid(width, height, parentElement){
 		
 		let thisGameInstance = this;
 
-		let parent = document.getElementById('grid');
+		let parent = parentElement; //document.getElementById('grid');
 
 		//console.log("width: " + window.innerWidth + " height: " + window.innerHeight)
 		
@@ -57,8 +63,6 @@ class Game {
 				newColumn.style.border = '1px solid #000';
 				newColumn.style.width = w + "px"; 
 				newColumn.style.height = h + "px"; 
-				//newColumn.style.display = 'inline-block';
-				//newColumn.style.verticalAlign = "middle";
 				newColumn.style.backgroundSize = "100% 100%";
 				newColumn.id = 'column' + j;
 				newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
@@ -75,8 +79,61 @@ class Game {
 			table.appendChild(newRow);
 		}
 		
-		parent.appendChild(table);
+		parent.appendChild(table);	
+	}
+	
+	/*** 
+		draw a new hand (pull 3 cards) for the player 
+		@gameInstance = instance of Game object 
+	***/
+	drawCards(){	
+		let deck = this.playerDeck;
 		
+		if(deck.length === 0){
+			return;
+		}
+		
+		// shuffle deck first?
+		
+		let max = this.deckSize;
+		if(deck.length <= 2 && deck.length >= 1){
+			max = deck.length;
+		}
+		
+		let cardsDrawn = [];
+		for(let i = 1; i < max; i++){
+			cardsDrawn.push(deck.remove());
+		}
+		
+		ReactDOM.render(React.createElement(CurrentHand, {numCardsPerHand: max, cards: cardsDrawn, gameInstance: this}), document.getElementById('showCards'));
+		/*
+		let randIndex = Math.floor(Math.random() * deck.length);
+		let selectedCard = deck.remove();
+	
+		let cardDisplay = document.getElementById('card' + i);
+		
+		document.getElementById('card' + i + 'title').textContent = selectedCard.name;
+		document.getElementById('card' + i + 'title').style.fontWeight = "bold";
+		
+		document.getElementById('card' + i + 'pic').setAttribute('src', selectedCard.image);
+		document.getElementById('card' + i + 'pic').setAttribute('width', '200px');
+		document.getElementById('card' + i + 'pic').setAttribute('height', '150px');
+		document.getElementById('card' + i + 'pic').style.marginTop = "10px";
+		
+		document.getElementById('card' + i + 'description').textContent = selectedCard.description;
+		
+		let newButton = document.createElement('button');
+		newButton.style.marginTop = '10px';
+		newButton.textContent = 'activate';
+		newButton.id = 'card' + i + 'button';
+		
+		// not really relevant, but good reminder -  i thought i might've needed it somewhere 
+		// https://stackoverflow.com/questions/8909652/adding-click-event-listeners-in-loop
+		// https://stackoverflow.com/questions/750486/javascript-closure-inside-loops-simple-practical-example?noredirect=1&lq=1
+		newButton.addEventListener('click', () =>{ selectedCard.ability(this) });
+		
+		cardDisplay.appendChild(newButton);
+		*/
 	}
 
 	

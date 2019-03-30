@@ -7,6 +7,9 @@
 	<title> war game idea </title>
 	 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
+	<script src="https://unpkg.com/react@16.4.1/umd/react.production.min.js"></script>
+	<script src="https://unpkg.com/react-dom@16.4.1/umd/react-dom.production.min.js"></script>
+	
 </head>
 
 <style>
@@ -31,7 +34,8 @@
 	#grid{
 		position: relative;
 		border: 1px solid #000;
-		background-image: url('mapedit.png');
+		/*background-image: url('mapedit.png');*/
+		background-color:  #cccddd;
 		background-size: 100% 100%;
 		padding: 0;
 		margin: 0 auto;
@@ -89,7 +93,7 @@
 	
 	<div id='playerOptions'>
 		<h3> player info </h3>
-		<span><img src='nyasu7.png' id='player' width='100px' height='90px'></img></span> 
+		<span><img src='../../assets/nyasu7.png' id='player' width='100px' height='90px'></img></span> 
 		<h3> player's health: <span id='playerHealth'> 100 </span></h3>
 		<button id='drawCards'> draw cards </button>
 		<button id='endTurn'> end turn </button>
@@ -99,12 +103,11 @@
 <div id='grid'>
 </div>
 
-<div id='grid2'>
-</div>
+<br>
 
 <div id='showCards'>
-	<h3> cards go here </h3>
 	
+	<!--
 	<div id='currentCards'>
 		<div class ='card' id='deck'>
 			<h2> hi i'm the deck </h2>
@@ -128,6 +131,7 @@
 			<div id='card3description'></div>
 		</div>
 	</div>
+	-->
 	
 </div>
 
@@ -138,7 +142,7 @@
 </body>
 
 
-<script type="module">
+<script type="module" >
 // note: using modules enforces strict mode! 
 /*
 	notes:
@@ -150,7 +154,18 @@
 	- attach enemyAI functions to button via eventListener, not in line 
 	- create separate modules for each unique card 
 	- bundle modules to import as one? 
-	- use typescript to generate classes for card and deck 
+	
+	https://stackoverflow.com/questions/29149169/how-to-loop-and-render-elements-in-react-js-without-an-array-of-objects-to-map
+	https://stackoverflow.com/questions/27290013/how-to-render-multiple-children-without-jsx
+	
+	
+	thought of something:
+	it would make sense for cards to be deativated (and cleared from the screen) after use, but how to do that?
+	for example, if I'm supposed to place a unit, as soon as I click activate the card (and its description) could disappear, 
+	but what if I was still reading the card? also, can I cancel? 
+	
+	if we want to clear the card after placing the unit, I have to somehow set a current state like 'activatedCard' and 
+	listen for some change on the grid (i.e. placing a unit). then I can clear the card. 
 	
 */
 
@@ -168,7 +183,7 @@ let length = 36;
 let height = 15;
 
 let gameInstance = new Game();
-gameInstance.createGrid(length, height);
+gameInstance.createGrid(length, height, document.getElementById('grid'));
 //gameInstance.createGrid2(length, height);
 
 // set up units initially 
@@ -190,7 +205,7 @@ playerDeck.add(PancakeSniper);
 
 // hook up end draw cards button with drawCards function 
 document.getElementById('drawCards').addEventListener('click', function(){
-	gameInstance.playerDeck.drawCards(gameInstance);
+	gameInstance.drawCards();
 });
 
 
@@ -207,15 +222,15 @@ function initialState(length, height){
 	
 	// randomly place nyasu 
 	// function placeRandom(element, health, attack, leftBound, rightBound, bottomBound, topBound, stats)
-	gameInstance.placeRandom("nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+	gameInstance.placeRandom("../../assets/nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 	
 	// place enemies 
 	for(let i = 0; i < 10; i++){
-		gameInstance.placeRandom("shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
+		gameInstance.placeRandom("../../assets/shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 	}
 	
 	// place enemy boss
-	gameInstance.placeRandom("umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
+	gameInstance.placeRandom("../../assets/umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 	
 }
 

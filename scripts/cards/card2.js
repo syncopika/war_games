@@ -3,7 +3,7 @@ import { getPathsDefault } from './../Utils.js';
 
 const PancakeSniper = new Card(
 "pancake sniper", 
-"alolanRaichu.png",
+"../../assets/alolanRaichu.png",
  function(gameInstance){
 	// place a pancake sniper aka alolan raichu on the field 
 	// https://stackoverflow.com/questions/4402287/javascript-remove-event-listener
@@ -70,7 +70,7 @@ const PancakeSniper = new Card(
 		if(col > 32 && e.target.style.backgroundImage === ""){
 		
 			// place the unit 
-			e.target.style.backgroundImage = "url('" + "alolanRaichu.png" + "')";
+			e.target.style.backgroundImage = "url('" + "../../assets/alolanRaichu.png" + "')";
 			e.target.setAttribute("health", 120);
 			e.target.setAttribute("attack", 70);
 			e.target.setAttribute("unitType", 'range2');
