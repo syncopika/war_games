@@ -1,6 +1,6 @@
 import { getPathsDefault, getCell } from './Utils.js';
 import { Deck } from './Deck.js';
-import  {CurrentHand, CardDisplay} from './Hand.js';
+import { CurrentHand, CardDisplay } from './Hand.js';
 
 class Game {
 	constructor(){
