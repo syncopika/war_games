@@ -1,0 +1,12 @@
+{
+  "spec_dir": "spec",
+  "spec_files": [
+    "./tests/deck_module-spec.js",
+	"./tests/game_module-spec.js"
+  ],
+  "helpers": [
+    "helpers/**/*.js"
+  ],
+  "stopSpecOnExpectationFailure": false,
+  "random": true
+}

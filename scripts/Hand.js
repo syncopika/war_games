@@ -1,3 +1,12 @@
+// thought simply npm installing react and then importing from the node_modules directory would work
+// https://stackoverflow.com/questions/51765686/how-to-obtain-es6-module-of-react-and-reactdom
+// https://github.com/facebook/react/issues/11503
+// https://github.com/wearespindle/react-ecmascript
+
+// uncomment these for the jasmine tests lol  - this is because since Jasmine works server-side/in node.js,
+// it can access the node_modules where react and react-dom live. can't do that when integrating modules client-side as I'm doing 
+//import React from 'react';
+//import ReactDOM from 'react-dom';
 
 class CardDisplay extends React.Component{
 
@@ -18,17 +27,17 @@ class CardDisplay extends React.Component{
 	render(){
 		
 		let titleStyle = {
-			'font-weight': 'bold'
+			'fontWeight': 'bold'
 		}
 		
 		let imageStyle = {
 			'width': '200px',
 			'height': '150px',
-			'margin-top': '10px'
+			'marginTop': '10px'
 		}
 		
 		let buttonStyle = {
-			'margin-top': '10px'
+			'marginTop': '10px'
 		}
 		
 		/*

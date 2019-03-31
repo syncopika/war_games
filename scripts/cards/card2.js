@@ -3,7 +3,7 @@ import { getPathsDefault } from './../Utils.js';
 
 const PancakeSniper = new Card(
 "pancake sniper", 
-"./../../assets/alolanRaichu.png",
+"./assets/alolanRaichu.png",
  function(gameInstance){
 	// place a pancake sniper aka alolan raichu on the field 
 	// https://stackoverflow.com/questions/4402287/javascript-remove-event-listener

@@ -4,7 +4,7 @@
   "description": "a 2d turn-based game",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "babel-node spec/run_tests.js",
     "start": "node server.js"
   },
   "repository": {
@@ -18,6 +18,13 @@
   },
   "homepage": "https://github.com/syncopika/war_games#readme",
   "dependencies": {
-    "express": "^4.16.4"
+    "babel-core": "^6.26.3",
+    "babel-preset-es2015": "^6.24.1",
+    "express": "^4.16.4",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  },
+  "devDependencies": {
+    "jasmine": "^3.3.1"
   }
 }

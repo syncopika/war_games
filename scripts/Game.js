@@ -2,6 +2,10 @@ import { getPathsDefault, getCell } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
 
+// uncomment these for the jasmine tests lol
+//import React from 'react';
+//import ReactDOM from 'react-dom';
+
 class Game {
 	constructor(){
 		this.playerUnits = [];
@@ -9,21 +13,21 @@ class Game {
 	
 		this.playerDeck = new Deck();
 		this.enemyDeck = new Deck();
-		this.deckSize = 4;
+		this.handSize = 4; // how many cards a hand can have at a time 
 	
 		this.currentUnit = null;
 	}
 	
 	clearEnemyUnits(){
-		this.enemyUnits.splice(0, this.playerUnits.length);
+		this.enemyUnits.splice(0, this.enemyUnits.length);
 	}
 	
 	clearPlayerUnits(){
 		this.playerUnits.splice(0, this.playerUnits.length);
 	}
 	
-	setDeckSize(newSize){
-		this.deckSize = newSize;
+	setHandSize(newSize){
+		this.handSize = newSize;
 	}
 	
 	/*****
@@ -95,7 +99,7 @@ class Game {
 		
 		// shuffle deck first?
 		
-		let max = this.deckSize;
+		let max = this.handSize;
 		if(deck.length <= 2 && deck.length >= 1){
 			max = deck.length;
 		}
