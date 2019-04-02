@@ -13,6 +13,9 @@ describe("check Game class for correctness", () => {
 		expect(gameInstance.handSize).toEqual(4);
 	});
 	
+	// this does test implementation detail (yes, that's not really a good thing)
+	// but the player's and enemy's set of units shouldn't be altered from outside the Game class
+	// except for clearing their sets. therefore there aren't any getters/setters for player and enemy units.
 	it("check clearEnemyUnits", () => {
 		gameInstance.enemyUnits = [1,2,3,4,5];
 		expect(gameInstance.enemyUnits.length).toEqual(5); 
@@ -51,6 +54,8 @@ describe("check Game class for correctness", () => {
 
 		// now check dummyNode's children to make sure all the right elements were created		
 		expect(document.getElementsByTagName('table').length).toEqual(1); // there should be 1 table only
+		expect(document.getElementsByTagName('tr').length).toEqual(15); 
+		expect(document.getElementsByTagName('td').length).toEqual(540); // 15*36 
 		//console.log(`CONSTRUCTED DOM: ${jsdom.serialize()}`);
 
 		

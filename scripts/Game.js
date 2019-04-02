@@ -19,11 +19,11 @@ class Game {
 	}
 	
 	clearEnemyUnits(){
-		this.enemyUnits.splice(0, this.enemyUnits.length);
+		this.enemyUnits = [];
 	}
 	
 	clearPlayerUnits(){
-		this.playerUnits.splice(0, this.playerUnits.length);
+		this.playerUnits = [];
 	}
 	
 	setHandSize(newSize){
@@ -41,7 +41,7 @@ class Game {
 		
 		let thisGameInstance = this;
 
-		let parent = parentElement; //document.getElementById('grid');
+		let parent = parentElement;
 
 		//console.log("width: " + window.innerWidth + " height: " + window.innerHeight)
 		
@@ -70,7 +70,7 @@ class Game {
 				newColumn.style.backgroundSize = "100% 100%";
 				newColumn.id = 'column' + j;
 				newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
-
+				
 				// bind click event to highlight paths 
 				newColumn.addEventListener('click', () => { thisGameInstance.activeObject(newColumn, thisGameInstance.playerUnits); });
 				//newColumn.addEventListener('click', function(){ thisGameInstance.activeObject(this, thisGameInstance.playerUnits); });   //note the difference from the arrow function!
@@ -335,7 +335,7 @@ class Game {
 			}
 			
 			currElement.setAttribute('pathLight', 0);
-			currentUnit = null;
+			this.currentUnit = null;
 		}
 	}
 
@@ -406,18 +406,41 @@ class Game {
 			
 			// if cell to move in is an enemy unit 
 			if(element.className === "enemy"){
+				
+				let animationCanvas = document.createElement('canvas');
+				
+				// show animation 
+				//let rect = element.getBoundingClientRect();
+				animationCanvas.width = parseInt(element.style.width);
+				animationCanvas.height = parseInt(element.style.height);
+				//animationCanvas.style.top = rect.top + window.scrollY;
+				//animationCanvas.style.left = rect.left + window.scrollX;
+				animationCanvas.style.zIndex = 1;
+				animationCanvas.style.opacity = .6;
+				let canvasCtx = animationCanvas.getContext('2d');
+				canvasCtx.fillStyle = "#000";
+				canvasCtx.fillRect(0, 0, animationCanvas.width, animationCanvas.height);
+				element.appendChild(animationCanvas);
+				
 				// do damage
+				// show some effects when dealing damage
 				let damage = element.getAttribute("health") - this.currentUnit.getAttribute("attack");
 				if(damage <= 0){
 					// remove from enemyUnits array 
 					this.enemyUnits.splice(this.enemyUnits.indexOf(element), 1);
-					
+				
 					// obliterate enemy 
+					let gridContainer = element.parentNode.parentNode.parentNode.id;
 					if(this.currentUnit.getAttribute("unitType") === 'range2'){
-						$('#grid').effect("bounce");
+						$('#' + gridContainer).effect("bounce");
 					}else{
-						$('#grid').effect("shake");
+						$('#' + gridContainer).effect("shake");
 					}
+					
+					// remove animation canvas 
+					setTimeout(function(){
+						element.removeChild(animationCanvas);
+					}, 300);
 					
 					element.classList.remove("enemy");
 					element.style.backgroundImage = "";
@@ -455,7 +478,8 @@ class Game {
 						}
 					}
 				}
-			}
+				
+			} // end if enemy 
 		}
 	}
 
