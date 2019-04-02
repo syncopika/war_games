@@ -48,7 +48,7 @@ class Game {
 		let w = Math.round(Math.floor(window.innerWidth / width) / 10) * 10; // calculate width of cell
 		let h = Math.round(Math.floor(window.innerHeight / height) / 10) * 8; // calculate height of cell
 		
-		console.log("w: " + w + " h: " + h)
+		//console.log("w: " + w + " h: " + h)
 		parent.style.padding = "5px";
 		
 		let table = document.createElement('table');

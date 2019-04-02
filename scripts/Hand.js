@@ -13,7 +13,6 @@ class CardDisplay extends React.Component{
 	constructor(props){
 		super(props);
 		this.state = {
-			//'dead': false,
 			'index': this.props.index,
 			'name': this.props.name,
 			'image': this.props.image,
@@ -82,22 +81,30 @@ class CurrentHand extends React.Component {
 		super(props);
 		this.state = {
 			'numCardsPerHand':  this.props.numCardsPerHand,
-			 'cards': this.props.cards,
-			 'cardStates': this.props.cards.map((el) => false),
-			 'gameInstance': this.props.gameInstance
+			'cards': this.props.cards,
+			'cardStates': Array(this.props.numCardsPerHand).fill(true), //this.props.cards.map((el) => true),
+			'gameInstance': this.props.gameInstance
 		}
 	}
 
+	// on updating arrays in state: https://stackoverflow.com/questions/26253351/correct-modification-of-state-arrays-in-reactjs
 	render(){
-		let cardDisplays = this.state.cards.map((card, i) => { return React.createElement(CardDisplay, {
-			key: i, // key is special so it can't be accessed from props (will just be 'undefined')
-			index: i,
-			name: card.name, 
-			image: card.image, 
-			description: card.description, 
-			ability: () => card.ability(this.props.gameInstance) 
-			}); 
+		let cardDisplays = this.state.cards.map((card, i) => { 
+			if(this.state.cardStates[i] === true){
+				return React.createElement(CardDisplay, {
+					key: i, // key is special so it can't be accessed from props (will just be 'undefined')
+					index: i,
+					name: card.name, 
+					image: card.image, 
+					description: card.description, 
+					ability: () => { 
+						card.ability(this.props.gameInstance); 
+						this.setState((state) => { let copy = [...state.cardStates]; copy[i] = false; return {'cardStates': copy} }); 
+					}
+				});	
+			}
 		});
+
 		return(
 			React.createElement('div', null, cardDisplays)
 		)

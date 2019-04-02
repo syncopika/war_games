@@ -5,7 +5,7 @@
 	"./tests/game_module-spec.js"
   ],
   "helpers": [
-    "helpers/**/*.js"
+    "helpers/jsdom.js"
   ],
   "stopSpecOnExpectationFailure": false,
   "random": true
