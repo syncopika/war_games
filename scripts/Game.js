@@ -30,6 +30,22 @@ class Game {
 		this.handSize = newSize;
 	}
 	
+	explosionAnimation(timestamp, num, canvas){
+		if(num > 6){
+			return;
+		}
+		let nextImage = new Image();
+		nextImage.src = '/explosion_animation/' + num + '.png';
+
+		let self = this;
+		nextImage.onload = function(){
+			let ctx = canvas.getContext('2d');
+			ctx.clearRect(0,0,canvas.width,canvas.height);
+			ctx.drawImage(nextImage,0,0,nextImage.width,nextImage.height);
+			window.requestAnimationFrame(function(timestamp){self.explosionAnimation(timestamp, num+1, canvas)});
+		}
+	}
+	
 	/*****
 
 		create the grid map 
@@ -326,7 +342,7 @@ class Game {
 			
 			// if special unit, un-highlight attack paths also
 			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = getAttackRange(currElement, 2);
+				let attackRange = this.getAttackRange(currElement, 2);
 				for(let path in attackRange){
 					if(attackRange[path]){
 						attackRange[path].style.border = "1px solid #000";
@@ -416,11 +432,14 @@ class Game {
 				//animationCanvas.style.top = rect.top + window.scrollY;
 				//animationCanvas.style.left = rect.left + window.scrollX;
 				animationCanvas.style.zIndex = 1;
-				animationCanvas.style.opacity = .6;
+				//animationCanvas.style.opacity = .6;
 				let canvasCtx = animationCanvas.getContext('2d');
 				canvasCtx.fillStyle = "#000";
 				canvasCtx.fillRect(0, 0, animationCanvas.width, animationCanvas.height);
 				element.appendChild(animationCanvas);
+				
+		
+				window.requestAnimationFrame((timestamp)=>{this.explosionAnimation(timestamp, 1, animationCanvas)});
 				
 				// do damage
 				// show some effects when dealing damage
