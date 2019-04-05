@@ -1,6 +1,7 @@
 import { JSDOM } from "jsdom";
 import { Game } from "../../scripts/Game.js";
 
+// when testing make sure to uncomment import react statements in the script files used 
 describe("check Game class for correctness", () => {
 	
 	let gameInstance;
@@ -32,7 +33,7 @@ describe("check Game class for correctness", () => {
 	
 	it("createGrid works properly", () => {
 		// create a mock of the DOM
-		const jsdom = new JSDOM("<!doctype html><html><body><div></div></body></html>");
+		const jsdom = new JSDOM("<!doctype html><html><body><div></div><div></div></body></html>");
 		let document = jsdom.window.document;
 		
 		// https://stackoverflow.com/questions/39691486/document-is-not-defined-es6-import-with-jasmine-with-external-library-dependic
@@ -58,6 +59,7 @@ describe("check Game class for correctness", () => {
 		expect(document.getElementsByTagName('td').length).toEqual(540); // 15*36 
 		//console.log(`CONSTRUCTED DOM: ${jsdom.serialize()}`);
 
-		
+		// expecting console div to have 1 child (the scroll area)
+		//expect(document.getElementById('console').children.length).toEqual(1);
 	});
 });

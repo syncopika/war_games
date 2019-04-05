@@ -21,8 +21,6 @@ class CardDisplay extends React.Component{
 		}
 	}
 	
-	/* need to be able to update state! */
-	
 	render(){
 		
 		let titleStyle = {
@@ -66,7 +64,7 @@ class CardDisplay extends React.Component{
 			React.createElement('div', null, this.state.description),
 			React.createElement('button', {style: buttonStyle, onClick: () => {
 				this.state.ability();
-				console.log(this.state.index);
+				//console.log(this.state.index);
 				//console.log("card is now dead");
 				// tell parent that we should be inactivated and cleared from the hand 
 			}}, 'activate')
@@ -99,6 +97,8 @@ class CurrentHand extends React.Component {
 					description: card.description, 
 					ability: () => { 
 						card.ability(this.props.gameInstance); 
+						// make it so that after the ability is activated, this hand is immediately notified that the card has been used and should be 
+						// eliminated from view 
 						this.setState((state) => { let copy = [...state.cardStates]; copy[i] = false; return {'cardStates': copy} }); 
 					}
 				});	

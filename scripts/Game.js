@@ -1,6 +1,7 @@
 import { getPathsDefault, getCell } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
+import { GameConsole } from './GameConsole.js';
 
 // uncomment these for the jasmine tests lol
 //import React from 'react';
@@ -14,8 +15,15 @@ class Game {
 		this.playerDeck = new Deck();
 		this.enemyDeck = new Deck();
 		this.handSize = 4; // how many cards a hand can have at a time 
+		this.consoleDialog = [];
 	
 		this.currentUnit = null;
+		
+	}
+	
+	refreshConsole(msg){
+		this.consoleDialog.push(msg);
+		ReactDOM.render(React.createElement(GameConsole, {currDialog: this.consoleDialog}), document.getElementById('console'));
 	}
 	
 	clearEnemyUnits(){
@@ -35,14 +43,13 @@ class Game {
 			return;
 		}
 		let nextImage = new Image();
-		nextImage.src = '/explosion_animation/' + num + '.png';
+		nextImage.src = './explosion_animation/' + num + '.png';
 
-		let self = this;
-		nextImage.onload = function(){
+		nextImage.onload = () => {
 			let ctx = canvas.getContext('2d');
 			ctx.clearRect(0,0,canvas.width,canvas.height);
 			ctx.drawImage(nextImage,0,0,nextImage.width,nextImage.height);
-			window.requestAnimationFrame(function(timestamp){self.explosionAnimation(timestamp, num+1, canvas)});
+			window.requestAnimationFrame((timestamp) => this.explosionAnimation(timestamp, num+1, canvas));
 		}
 	}
 	
@@ -54,6 +61,8 @@ class Game {
 
 	******/
 	createGrid(width, height, parentElement){
+		
+		this.refreshConsole("game started");
 		
 		let thisGameInstance = this;
 
@@ -120,12 +129,16 @@ class Game {
 			max = deck.length;
 		}
 		
+		// if player already has some cards, the number of cards drawn can't exceed handSize!
 		let cardsDrawn = [];
 		for(let i = 1; i < max; i++){
 			cardsDrawn.push(deck.remove());
 		}
 		
+		// to do later: don't hardcode the container
+		this.refreshConsole("player drew " + cardsDrawn.length + " cards!");
 		ReactDOM.render(React.createElement(CurrentHand, {numCardsPerHand: max, cards: cardsDrawn, gameInstance: this}), document.getElementById('showCards'));
+		
 		/*
 		let randIndex = Math.floor(Math.random() * deck.length);
 		let selectedCard = deck.remove();
@@ -360,7 +373,7 @@ class Game {
 
 		move player's units 
 
-		pass in the DOM element you want to move to 
+		@element - the DOM element you want to move to 
 		
 	******/
 	moveUnit(element){
@@ -426,18 +439,13 @@ class Game {
 				let animationCanvas = document.createElement('canvas');
 				
 				// show animation 
-				//let rect = element.getBoundingClientRect();
 				animationCanvas.width = parseInt(element.style.width);
 				animationCanvas.height = parseInt(element.style.height);
-				//animationCanvas.style.top = rect.top + window.scrollY;
-				//animationCanvas.style.left = rect.left + window.scrollX;
 				animationCanvas.style.zIndex = 1;
-				//animationCanvas.style.opacity = .6;
 				let canvasCtx = animationCanvas.getContext('2d');
 				canvasCtx.fillStyle = "#000";
 				canvasCtx.fillRect(0, 0, animationCanvas.width, animationCanvas.height);
 				element.appendChild(animationCanvas);
-				
 		
 				window.requestAnimationFrame((timestamp)=>{this.explosionAnimation(timestamp, 1, animationCanvas)});
 				
@@ -497,7 +505,8 @@ class Game {
 						}
 					}
 				}
-				
+			
+			this.refreshConsole("player attacked!");
 			} // end if enemy 
 		}
 	}
