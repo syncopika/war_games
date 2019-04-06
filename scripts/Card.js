@@ -1,8 +1,3 @@
-/****
-
-	card 'class' 
-	
-****/
 class Card {
 	constructor(name,  image, func, description){
 		this.name = name;

@@ -3,11 +3,8 @@
 // https://github.com/facebook/react/issues/11503
 // https://github.com/wearespindle/react-ecmascript
 
-// uncomment these for the jasmine tests lol  - this is because since Jasmine works server-side/in node.js,
-// it can access the node_modules where react and react-dom live. can't do that when integrating modules client-side as I'm doing 
-//import React from 'react';
-//import ReactDOM from 'react-dom';
 
+// to be used as a child component of CurrentHand 
 class CardDisplay extends React.Component{
 
 	constructor(props){
@@ -45,7 +42,7 @@ class CardDisplay extends React.Component{
 				</div>
 				
 				<div>
-					<img src={this.state.image} style={imageStyle}>
+					<img src={this.state.image} style={imageStyle} />
 				</div>
 				
 				<div>
@@ -57,6 +54,7 @@ class CardDisplay extends React.Component{
 				</button>
 			</div>
 		)*/
+		
 		return React.createElement('div',
 			{className: "card"},
 			React.createElement('div', {style: titleStyle}, this.state.name),
@@ -64,9 +62,6 @@ class CardDisplay extends React.Component{
 			React.createElement('div', null, this.state.description),
 			React.createElement('button', {style: buttonStyle, onClick: () => {
 				this.state.ability();
-				//console.log(this.state.index);
-				//console.log("card is now dead");
-				// tell parent that we should be inactivated and cleared from the hand 
 			}}, 'activate')
 		)
 	}
@@ -80,7 +75,7 @@ class CurrentHand extends React.Component {
 		this.state = {
 			'numCardsPerHand':  this.props.numCardsPerHand,
 			'cards': this.props.cards,
-			'cardStates': Array(this.props.numCardsPerHand).fill(true), //this.props.cards.map((el) => true),
+			'cardStates': Array(this.props.numCardsPerHand).fill(true), 
 			'gameInstance': this.props.gameInstance
 		}
 	}
@@ -96,7 +91,7 @@ class CurrentHand extends React.Component {
 					image: card.image, 
 					description: card.description, 
 					ability: () => { 
-						card.ability(this.props.gameInstance); 
+						card.ability(this.props.gameInstance, card.name); 
 						// make it so that after the ability is activated, this hand is immediately notified that the card has been used and should be 
 						// eliminated from view 
 						this.setState((state) => { let copy = [...state.cardStates]; copy[i] = false; return {'cardStates': copy} }); 

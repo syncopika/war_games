@@ -3,27 +3,30 @@ import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
 import { GameConsole } from './GameConsole.js';
 
-// uncomment these for the jasmine tests lol
-//import React from 'react';
-//import ReactDOM from 'react-dom';
-
 class Game {
 	constructor(){
 		this.playerUnits = [];
 		this.enemyUnits = [];
 	
+		this.gameGridElement = null;
+	
 		this.playerDeck = new Deck();
 		this.enemyDeck = new Deck();
 		this.handSize = 4; // how many cards a hand can have at a time 
 		this.consoleDialog = [];
+		this.consoleElement = null; // assign the dom element that's supposed to hold the console 
 	
-		this.currentUnit = null;
-		
+		this.currentUnit = null;	
 	}
 	
 	refreshConsole(msg){
 		this.consoleDialog.push(msg);
-		ReactDOM.render(React.createElement(GameConsole, {currDialog: this.consoleDialog}), document.getElementById('console'));
+		if(this.consoleElement === null){
+			let consoleEl = document.createElement('div');
+			document.body.appendChild(consoleEl);
+			this.consoleElement = consoleEl;
+		}
+		ReactDOM.render(React.createElement(GameConsole, {consoleDialog: this.consoleDialog}), this.consoleElement);
 	}
 	
 	clearEnemyUnits(){
@@ -62,6 +65,7 @@ class Game {
 	******/
 	createGrid(width, height, parentElement){
 		
+		this.gameGridElement = parentElement;
 		this.refreshConsole("game started");
 		
 		let thisGameInstance = this;
@@ -123,7 +127,7 @@ class Game {
 		}
 		
 		// shuffle deck first?
-		
+	
 		let max = this.handSize;
 		if(deck.length <= 2 && deck.length >= 1){
 			max = deck.length;
@@ -139,34 +143,6 @@ class Game {
 		this.refreshConsole("player drew " + cardsDrawn.length + " cards!");
 		ReactDOM.render(React.createElement(CurrentHand, {numCardsPerHand: max, cards: cardsDrawn, gameInstance: this}), document.getElementById('showCards'));
 		
-		/*
-		let randIndex = Math.floor(Math.random() * deck.length);
-		let selectedCard = deck.remove();
-	
-		let cardDisplay = document.getElementById('card' + i);
-		
-		document.getElementById('card' + i + 'title').textContent = selectedCard.name;
-		document.getElementById('card' + i + 'title').style.fontWeight = "bold";
-		
-		document.getElementById('card' + i + 'pic').setAttribute('src', selectedCard.image);
-		document.getElementById('card' + i + 'pic').setAttribute('width', '200px');
-		document.getElementById('card' + i + 'pic').setAttribute('height', '150px');
-		document.getElementById('card' + i + 'pic').style.marginTop = "10px";
-		
-		document.getElementById('card' + i + 'description').textContent = selectedCard.description;
-		
-		let newButton = document.createElement('button');
-		newButton.style.marginTop = '10px';
-		newButton.textContent = 'activate';
-		newButton.id = 'card' + i + 'button';
-		
-		// not really relevant, but good reminder -  i thought i might've needed it somewhere 
-		// https://stackoverflow.com/questions/8909652/adding-click-event-listeners-in-loop
-		// https://stackoverflow.com/questions/750486/javascript-closure-inside-loops-simple-practical-example?noredirect=1&lq=1
-		newButton.addEventListener('click', () =>{ selectedCard.ability(this) });
-		
-		cardDisplay.appendChild(newButton);
-		*/
 	}
 
 	
@@ -313,7 +289,6 @@ class Game {
 			return;
 		}
 		
-		
 		// update header in top of page to show current unit selected and current health
 		// this makes some assumptions of the id's of the relevant elements in the header 
 		let imgUrl = currElement.style.backgroundImage; // need to eliminate the 'url()' part from the string 
@@ -443,7 +418,7 @@ class Game {
 				animationCanvas.height = parseInt(element.style.height);
 				animationCanvas.style.zIndex = 1;
 				let canvasCtx = animationCanvas.getContext('2d');
-				canvasCtx.fillStyle = "#000";
+				canvasCtx.fillStyle = "rgba(0,0,0,255)";
 				canvasCtx.fillRect(0, 0, animationCanvas.width, animationCanvas.height);
 				element.appendChild(animationCanvas);
 		

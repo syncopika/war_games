@@ -10,7 +10,6 @@ describe("check Game class for correctness", () => {
 	});
 	
 	it("has a default hand size of 4", () => {
-		//const g = new Game();
 		expect(gameInstance.handSize).toEqual(4);
 	});
 	
@@ -45,10 +44,6 @@ describe("check Game class for correctness", () => {
 		// https://stackoverflow.com/questions/23495325/mock-object-for-document-element
 		//document.getElementById = jasmine.createSpy('HTML Element').and.returnValue('dummyNode');
 		
-		// if innerHeight = 820 and innerWIdth = 1920 
-		// then height = 40, width = 50
-		// for testing purposes, set a dummy window variable with these inner dimension values 
-		//let window = {'innerHeight': 820, 'innerWidth': 1920};
 		let width = 36;
 		let height = 15;
 		gameInstance.createGrid(width, height, dummyNode);
@@ -59,7 +54,5 @@ describe("check Game class for correctness", () => {
 		expect(document.getElementsByTagName('td').length).toEqual(540); // 15*36 
 		//console.log(`CONSTRUCTED DOM: ${jsdom.serialize()}`);
 
-		// expecting console div to have 1 child (the scroll area)
-		//expect(document.getElementById('console').children.length).toEqual(1);
 	});
 });

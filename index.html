@@ -129,6 +129,8 @@
 	notes:
 	there should be an html attribute assigned to specify unit name/type. 
 	
+	// https://www.valentinog.com/blog/react-webpack-babel/
+	
 	TODO:
 
 	- UPDATE enemyAI.js 
@@ -164,6 +166,7 @@
 */
 
 import { Game } from "./scripts/Game.js";
+import { GameConsole } from "./scripts/GameConsole.js";
 import { enemyMovement } from "./scripts/enemyAI.js";
 import { CompleteDomination } from "./scripts/cards/card1.js";
 import { PancakeSniper } from "./scripts/cards/card2.js";
@@ -177,6 +180,7 @@ let length = 36;
 let height = 15;
 
 let gameInstance = new Game();
+gameInstance.consoleElement = document.getElementById('console');
 gameInstance.createGrid(length, height, document.getElementById('grid'));
 //gameInstance.createGrid2(length, height);
 
@@ -201,7 +205,6 @@ playerDeck.add(PancakeSniper);
 document.getElementById('drawCards').addEventListener('click', function(){
 	gameInstance.drawCards();
 });
-
 
 /***************************/
 

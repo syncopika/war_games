@@ -1,8 +1,10 @@
 // card name: completeDomination
 import Card from '../Card.js';
 
-const CompleteDomination = new Card( "complete domination", "./assets/mikudayo.png", function(gameInstance){
+const CompleteDomination = new Card( "complete domination", "./assets/mikudayo.png", function(gameInstance, name){
 	// wipe out all enemies 
+	gameInstance.refreshConsole("Player invoked " + name + "!");
+	
 	let enemyUnits = gameInstance.enemyUnits;
 	for(let i = 0; i < enemyUnits.length; i++){
 		$('#grid').effect("shake");

@@ -1,10 +1,10 @@
 import Card  from '../Card.js';
-import { getPathsDefault } from './../Utils.js';
+import { getPathsDefault, selectEnemyOn, selectEnemyOut } from './../Utils.js';
 
 const BearAttack = new Card(
 "bear attack",
 "./assets/aoba6.png",
-function(gameInstance){
+function(gameInstance, name){
 	
 	let currentUnit = gameInstance.currentUnit;
 	let enemies = gameInstance.enemyUnits;
@@ -15,6 +15,8 @@ function(gameInstance){
 	// does 10 damage 
 	// make sure to show damage done and which unit
 	// NEED TO DISABLE MOVEUNIT() EXECUTION WHEN DOING THIS!
+	
+	gameInstance.refreshConsole("Player activated " + name + "!");
 
 	// clear the currentUnit in case some unit is selected while trying to implement attack
 	// don't forget possible ranged attack 
@@ -36,18 +38,6 @@ function(gameInstance){
 		// change pathLight so it will highlight when clicked on again 
 		currentUnit.setAttribute("pathLight", 0);
 		gameInstance.currentUnit = null;
-	}
-	
-	function selectEnemyOn(e){
-		if(e.target.className === "enemy"){
-			e.target.style.border = "1px solid rgb(221, 223, 255)";
-		}
-	}
-	
-	function selectEnemyOut(e){
-		if(e.target.className === "enemy"){
-			e.target.style.border = "1px solid #000";
-		}
 	}
 	
 	document.getElementById('grid').addEventListener('mouseover', selectEnemyOn);

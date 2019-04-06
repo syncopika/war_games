@@ -60,4 +60,46 @@ function getCell(row, col){
 	return null;
 }
 
-export { getPathsDefault, getCell };
+// highlight valid cell to place unit within player's territory
+function validSpace(e){
+	let findDigit = e.target.id.match(/\d+/);
+	
+	if(findDigit !== null){
+		let col = parseInt( e.target.id.match(/\d+/)[0] );
+	
+		// come up with a separate function to determine whether a square is within player territory
+		if(col > 32){
+			// highlight spot because this is a valid place to place unit
+			e.target.style.border = "1px solid rgb(221, 223, 255)";
+		}
+	}
+}
+
+// when hovering over an enemy to select for an attack
+function selectEnemyOn(e){
+	if(e.target.className === "enemy"){
+		e.target.style.border = "1px solid rgb(221, 223, 255)";
+	}
+}
+
+// when hovering over an enemy to select for an attack and the cursor leaves 
+function selectEnemyOut(e){
+	if(e.target.className === "enemy"){
+		e.target.style.border = "1px solid #000";
+	}
+}
+
+// when moving over grid cells, de-highlight cells passed over if cursor moves to another cell 
+function leaveSpace(e){
+	let findDigit = e.target.id.match(/\d+/);
+	if(findDigit !== null){
+		let col = parseInt( e.target.id.match(/\d+/)[0] );
+		// come up with a separate function to determine whether a square is within player territory
+		if(col > 32){
+			e.target.style.border = "1px solid #000";
+			
+		}
+	}
+}
+
+export { getPathsDefault, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut };
