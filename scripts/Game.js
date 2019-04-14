@@ -147,7 +147,6 @@ class Game {
 
 	
 	/****
-
 		place unit in random location
 		and add to either player's or enemy's list of units 
 
@@ -191,6 +190,27 @@ class Game {
 			this.playerUnits.push(randCell);
 		}
 	}
+	
+	/*****
+	
+		place obstacles randomly
+	
+	******/
+	placeObstacles(leftBound, rightBound, bottomBound, topBound){
+		let randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
+		let randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
+		let randCell = getCell(randomRow, randomCol);
+		
+		while(randCell.style.backgroundImage !== ""){
+			randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
+			randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
+			randCell = getCell(randomRow, randomCol);
+		}
+		
+		randCell.style.backgroundColor = "#000";
+		randCell.className = "obstacle";
+	}
+	
 	
 	/*****
 	
@@ -354,6 +374,10 @@ class Game {
 	moveUnit(element){
 		
 		if(this.currentUnit == null){
+			return;
+		}
+		
+		if(element.className === "obstacle"){
 			return;
 		}
 		

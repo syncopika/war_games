@@ -1,5 +1,5 @@
 class Card {
-	constructor(name,  image, func, description){
+	constructor(name, image, func, description){
 		this.name = name;
 		this.image = image;
 		this.ability = func;

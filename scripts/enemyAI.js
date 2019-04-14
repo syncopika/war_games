@@ -56,7 +56,6 @@ function enemyMovement(enemyElement, enemyUnits, playerUnits){
 			}
 			return;
 		}
-		
 		// but what if there is a fellow enemy in an adjacent square?
 		if(enemyUnits.includes(paths[path])){
 			// don't do anything
@@ -65,18 +64,22 @@ function enemyMovement(enemyElement, enemyUnits, playerUnits){
 	}
 		
 	// if no enemy, randomly move in a direction 
-	let direction = Math.floor(Math.random() * 10);
+	let direction = Math.floor(Math.random() * 12);
 	let newCell;
 	
-	if(direction < 10){
+	if(direction < 6){
 		// move right
 		newCell = enemyElement.nextSibling;
-	}else{
+	}else if(direction >= 6 && direction <= 12){
 		// move left 
 		newCell = enemyElement.previousSibling;
 	}
 	
 	if(newCell === null){
+		return;
+	}
+	
+	if(newCell.className === "obstacle"){
 		return;
 	}
 	

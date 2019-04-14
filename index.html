@@ -229,6 +229,10 @@ function initialState(length, height){
 	// place enemy boss
 	gameInstance.placeRandom("./assets/umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 	
+	// place obstacles
+	for(let i = 0; i < 15; i++){
+		gameInstance.placeObstacles(0, length, 0, height);
+	}
 }
 
 // add event listener to document to be able to click on enemy units and get some info 

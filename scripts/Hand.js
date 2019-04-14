@@ -15,24 +15,24 @@ class CardDisplay extends React.Component{
 			'image': this.props.image,
 			'description': this.props.description,
 			'ability': this.props.ability
-		}
+		};
 	}
 	
 	render(){
 		
 		let titleStyle = {
 			'fontWeight': 'bold'
-		}
+		};
 		
 		let imageStyle = {
 			'width': '200px',
 			'height': '150px',
 			'marginTop': '10px'
-		}
+		};
 		
 		let buttonStyle = {
 			'marginTop': '10px'
-		}
+		};
 		
 		/*
 		return(
