@@ -167,7 +167,7 @@
 
 import { Game } from "./scripts/Game.js";
 import { GameConsole } from "./scripts/GameConsole.js";
-import { enemyMovement } from "./scripts/enemyAI.js";
+import { enemyMovement, enemyMovement2 } from "./scripts/enemyAI.js";
 import { CompleteDomination } from "./scripts/cards/card1.js";
 import { PancakeSniper } from "./scripts/cards/card2.js";
 import { BearAttack } from "./scripts/cards/card3.js";
@@ -190,7 +190,7 @@ initialState(length, height);
 
 // hook up end turn button with enemyTurn function 
 document.getElementById('endTurn').addEventListener('click', function(){
-	gameInstance.enemyTurn(enemyMovement);
+	gameInstance.enemyTurn(enemyMovement2);
 });
 
 

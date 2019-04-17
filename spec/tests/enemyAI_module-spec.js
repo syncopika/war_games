@@ -3,7 +3,18 @@ import { Game } from "../../scripts/Game.js";
 import { dfs } from "../../scripts/enemyAI.js";
 
 
-function makeGridSmall(gridDiv){
+// coords = map where key = row, value = array of col numbers
+// can't use the same key more than once, so can't have key-value pairs for every coord pair  
+function placeObstacles(coords, table){
+	let rows = table.childNodes;
+	for(let x in coords){
+		let yCoords = coords[x];
+		let row = rows[x];
+		yCoords.forEach((y) => {
+			let obstacle = row.childNodes[y];
+			obstacle.className = "obstacle";
+		});
+	}
 }
 
 
@@ -57,6 +68,24 @@ describe("check functions from enemyAI.js", () => {
 	it('test dfs with only one possible path', () => {
 		let start = document.getElementById('row0').childNodes[0];
 		let toFind = document.getElementById('row2').childNodes[2];
+		
+		// set obstacles 
+		expect(document.getElementsByTagName('table').length).toEqual(1);
+		//expect(document.getElementsByTagName('table')[0]).not.toBeNull();
+		
+		let table = document.getElementsByTagName('table')[0];
+		let obstacles = {
+			0: [3],
+			1: [0,1,3]
+		};
+		placeObstacles(obstacles, table);
+		
+		let path = dfs(start, toFind, new Set());
+		expect(path.length).toEqual(4);
+		expect(path[0]).toEqual("row0column1");
+		expect(path[1]).toEqual("row0column2");
+		expect(path[2]).toEqual("row1column2");
+		expect(path[3]).toEqual("row2column2");
 	});
 	
 });
