@@ -97,7 +97,7 @@ class Game {
 				newColumn.style.width = w + "px"; 
 				newColumn.style.height = h + "px"; 
 				newColumn.style.backgroundSize = "100% 100%";
-				newColumn.id = 'column' + j;
+				newColumn.id = newRow.id + 'column' + j;
 				newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
 				
 				// bind click event to highlight paths 

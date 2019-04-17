@@ -11,17 +11,16 @@ function getPathsDefault(element){
 	
 	// get the parent of this element. this element should be a column cell, so the parent will be the row
 	let row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
-	let column = parseInt(element.id.match(/\d+/g)[0]);
+	let column = parseInt(element.id.match(/\d+/g)[1]);
 	
 	// top coordinate is row - 1, same column num
 	// bottom coord is row + 1, same column num
 	// left coord is column num - 1, same row 
 	// right coord is column num + 1, same row 
-
 	if(element.parentNode.previousSibling){	
 		let previousRow = element.parentNode.previousSibling.childNodes;
 		for(let i = 0; i < previousRow.length; i++){
-			if(previousRow[i].id.match(/\d+/g)[0] == column){
+			if(previousRow[i].id.match(/\d+/g)[1] == column){
 				paths['top'] = previousRow[i];
 				break;
 			}
@@ -33,7 +32,7 @@ function getPathsDefault(element){
 	if(element.parentNode.nextSibling){
 		let nextRow = element.parentNode.nextSibling.childNodes;
 		for(let i = 0; i < nextRow.length; i++){
-			if(nextRow[i].id.match(/\d+/g)[0] == column){
+			if(nextRow[i].id.match(/\d+/g)[1] == column){
 				paths['bottom'] = nextRow[i];
 				break;
 			}
@@ -48,13 +47,13 @@ function getPathsDefault(element){
 	return paths;
 }
 
-
+// get the DOM element that represents a cell in the grid given a row and column. 
 function getCell(row, col){
 	// changing let to var here stopped Chrome from complaining. why?
-	var row = document.getElementById('row' + row).childNodes;
-	for(let i = 0; i < row.length; i++){
-		if(row[i].id === 'column' + col){
-			return row[i];
+	var rowElement = document.getElementById('row' + row).childNodes;
+	for(let i = 0; i < rowElement.length; i++){
+		if(rowElement[i].id === ('row' + row + 'column' + col)){
+			return rowElement[i];
 		}
 	}
 	return null;

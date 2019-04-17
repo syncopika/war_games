@@ -4,7 +4,8 @@
     "./tests/deck_module-spec.js",
 	"./tests/game_module-spec.js",
 	"./tests/utils_module-spec.js",
-	"./tests/hand_module-spec.js"
+	"./tests/hand_module-spec.js",
+	"./tests/enemyAI_module-spec.js"
   ],
   "helpers": [
 	"helpers/babel.js",

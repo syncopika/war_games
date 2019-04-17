@@ -40,6 +40,7 @@ const PancakeSniper = new Card(
 			e.target.setAttribute("health", 120);
 			e.target.setAttribute("attack", 70);
 			e.target.setAttribute("unitType", 'range2');
+			e.target.className = "player";
 			player.push(e.target);	// add new unit to player's units array
 			currentUnit = e.target;  // set as current unit 
 			
