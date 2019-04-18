@@ -113,6 +113,51 @@ function dfs(element, elementToFind, enemySet){
 	if(element === elementToFind){
 		return;
 	}
+	
+	// I think we can optimize this slightly(?) by reducing the number of possible nodes to be considered.
+	// since we know the row and column of our current node as well as of the target node,
+	// we can form a box (with the current and target nodes being corners) 
+	// that defines row and column boundaries. so before we add a new potential node to visit 
+	// to the stack, we check if it's row and column falls within the row/col boundaries.
+	//
+	// however, you could introduce some interesting bugs here:
+	// what about the scenario when the current and target node are in the same column, but 
+	// there's another enemy in the way? the min and max columns would be the same, which would 
+	// inhibit any horizontal movement! (so there would never be a path between the 2 nodes, and we get an infinite loop)
+	//
+	// similarly, what if they're in the same row and there's an obstacle? 
+	// to remedy these situations, ensure that there is some extra room to move around if
+	// columns or rows are the same between current and target nodes. 
+	//
+	// and here's another scenario: what if a unit is blocked off in a corner? i.e. there's another 
+	// enemy blocking the only possible path, and is surrounded by obstacles in the other directions
+	// in this case, make sure that the node to find is in fact in the map of nodes and their predecessors as a key.
+	// this ensures there is a path from the current to target. 
+	
+	let selfNums = element.id.match(/\d+/g);
+	let selfRow = parseInt(selfNums[0]);
+	let selfCol = parseInt(selfNums[1]);
+	
+	let targetNums = elementToFind.id.match(/\d+/g);
+	let targetRow = parseInt(targetNums[0]);
+	let targetCol = parseInt(targetNums[1]);
+	
+	let rowBoundaryMin = Math.min(targetRow, selfRow);
+	let rowBoundaryMax = Math.max(targetRow, selfRow);
+	
+	if(rowBoundaryMin === rowBoundaryMax){
+		rowBoundaryMin--;
+		rowBoundaryMax++;
+	}
+	
+	let colBoundaryMin = Math.min(targetCol, selfCol);
+	let colBoundaryMax = Math.max(targetCol, selfCol);
+	
+	if(colBoundaryMin === colBoundaryMax){
+		colBoundaryMin--;
+		colBoundaryMax++;
+	}
+	
 	let stack = [element];
 	let seen = new Set();
 	let map = {}; // record path to get to elementToFind 
@@ -135,16 +180,27 @@ function dfs(element, elementToFind, enemySet){
 				continue;
 			}
 			if(!seen.has(paths[dir])){
-				map[paths[dir].id] = curr.id; // curr is the node that led to paths[dir]
-				stack.push(paths[dir]);
+				let rowCol = paths[dir].id.match(/\d+/g);
+				let row = parseInt(rowCol[0]);
+				let col = parseInt(rowCol[1]);
+				if(row >= rowBoundaryMin && row <= rowBoundaryMax && col <= colBoundaryMax && col >= colBoundaryMin){
+					map[paths[dir].id] = curr.id; // curr is the node that led to paths[dir]
+					stack.push(paths[dir]);
+				}
 			}
 		}
 	}
 	// quick question: if instead of id's we use DOM elements as keys and values, 
 	// why does that cause an infinite loop? is there anything different in hashing a string compared to a DOM element? 
-	
+	//console.log(element.id);
+	//console.log(elementToFind.id);
 	//console.log(map);
+	
 	// return path to elementToFind
+	if(!map[elementToFind.id]){
+		return [];
+	}
+	
 	let pathToFollow = [];
 	let node = elementToFind.id;
 	while(node !== null){
@@ -152,12 +208,18 @@ function dfs(element, elementToFind, enemySet){
 		pathToFollow.push(node);
 		node = map[node];
 	}
+
 	// pop off the first node since that's the one we're on 
 	pathToFollow.pop();
 	
 	// list of ids!
 	pathToFollow.reverse();
 	return pathToFollow;
+}
+
+
+function dijkstra(element, elementToFind, enemySet){
+	
 }
 
 // another kind of enemy movement - not very fast or precise
@@ -220,6 +282,11 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 	
 	// calculate a path to that target 
 	let path = dfs(enemyElement, unitToFind, enemies);
+	
+	if(path.length === 0){
+		// enemy can't move 
+		return;
+	}
 	
 	/*
 	// checking out paths generated...
