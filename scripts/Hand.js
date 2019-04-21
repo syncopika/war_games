@@ -34,9 +34,8 @@ class CardDisplay extends React.Component{
 			'marginTop': '10px'
 		};
 		
-		/*
 		return(
-			<div>
+			<div class="card">
 				<div style={titleStyle}>
 					{this.state.name}
 				</div>
@@ -53,8 +52,9 @@ class CardDisplay extends React.Component{
 					activate
 				</button>
 			</div>
-		)*/
+		);
 		
+		/*
 		return React.createElement('div',
 			{className: "card"},
 			React.createElement('div', {style: titleStyle}, this.state.name),
@@ -63,7 +63,7 @@ class CardDisplay extends React.Component{
 			React.createElement('button', {style: buttonStyle, onClick: () => {
 				this.state.ability();
 			}}, 'activate')
-		)
+		)*/
 	}
 
 }

@@ -1,0 +1,15 @@
+things are getting confusing (in terms of testing and building this project while using React components and ES6) so here are some notes to self.
+
+some of the important node modules and why we need them:
+
+1. babel/core -> this is needed to use Babel to transpile the ES6 code, namely module exports. Even though you can use script=module within HTML pages now,
+if you want to do testing with Node (Node doesn't have native support for module importing currently AFAIK), or use Webpack to bundle the scripts, as well 
+as if you have React components and use JSX, Babel is needed. unfortunately, you also need a few other Babel libraries to use with core to do the aforementioned things.
+
+2. babel/node -> to use Babel with Node (like for testing with jasmine and enzyme)
+
+3. babel/preset-XYZ -> these presets tell what to transpile to?
+
+4. babel-loader -> for webpack 
+
+5. babel-register -> transpiles files on the fly by binding Node's require method. 
