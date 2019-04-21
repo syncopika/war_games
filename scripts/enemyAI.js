@@ -29,22 +29,25 @@ function enemyMovement(enemyElement, enemyUnits, playerUnits){
 		
 		if(player.includes(paths[path])){
 			// do attack 
-			let opponentHealth = paths[path].getAttribute('health');
+			let opponent = paths[path];
+			let opponentHealth = opponent.getAttribute('health');
+			let currAttack = enemyElement.getAttribute('attack');
 			let newOpponentHealth = opponentHealth - enemyElement.getAttribute('attack');
 			// what if kill opponent?
 			if(newOpponentHealth <= 0){
 				// obliterate opponent from map
 				document.getElementById('playerHealth').textContent = "0";
-				paths[path].style.backgroundImage = "";
-				paths[path].setAttribute('health', null);
-				paths[path].setAttribute('attack', null);
+				opponent.style.backgroundImage = "";
+				opponent.removeAttribute('health');
+				opponent.removeAttribute('attack');
+				opponent.removeAttribute('unittype');
+				opponent.classList.remove('player');
 				// remove from player array
-				player.splice(player.indexOf(paths[path]), 1);
+				player.splice(player.indexOf(opponent), 1);
 			}else{
 				// otherwise decrement health 
-				paths[path].style.border = "1px solid #FF1919"; // red border to indicate damage
-				
-				paths[path].setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
+				opponent.style.border = "1px solid #FF1919"; // red border to indicate damage
+				opponent.setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
 				
 				// only show current health for boss nyasu for now 
 				if(paths[path].style.backgroundImage.match(/(nyasu7)/g)){
@@ -57,7 +60,6 @@ function enemyMovement(enemyElement, enemyUnits, playerUnits){
 				let enemyCell = paths[path]; // assign a letiable paths[path]. can't just change paths[path] border because then only the last one in the loop will be referenced
 				setTimeout(function(){ enemyCell.style.border = "1px solid #000"; console.log(paths[path]) }, 1000);
 			}
-			return;
 		}
 	}
 		
@@ -111,7 +113,10 @@ function enemyMovement(enemyElement, enemyUnits, playerUnits){
 
 function dfs(element, elementToFind, enemySet){
 	if(element === elementToFind){
-		return;
+		return [];
+	}
+	if(elementToFind === undefined){
+		return [];
 	}
 	
 	// I think we can optimize this slightly(?) by reducing the number of possible nodes to be considered.
@@ -218,10 +223,6 @@ function dfs(element, elementToFind, enemySet){
 }
 
 
-function dijkstra(element, elementToFind, enemySet){
-	
-}
-
 // another kind of enemy movement - not very fast or precise
 // https://www.redblobgames.com/pathfinding/grids/algorithms.html
 // https://stackoverflow.com/questions/12864004/tracing-and-returning-a-path-in-depth-first-search
@@ -239,22 +240,25 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 		
 		if(playerUnits.includes(paths[path])){
 			// do attack 
-			let opponentHealth = paths[path].getAttribute('health');
+			let opponent = paths[path];
+			let opponentHealth = opponent.getAttribute('health');
+			let currAttack = enemyElement.getAttribute('attack');
 			let newOpponentHealth = opponentHealth - enemyElement.getAttribute('attack');
 			// what if kill opponent?
 			if(newOpponentHealth <= 0){
 				// obliterate opponent from map
 				document.getElementById('playerHealth').textContent = "0";
-				paths[path].style.backgroundImage = "";
-				paths[path].setAttribute('health', null);
-				paths[path].setAttribute('attack', null);
+				opponent.style.backgroundImage = "";
+				opponent.removeAttribute('health');
+				opponent.removeAttribute('attack');
+				opponent.removeAttribute('unittype');
+				opponent.classList.remove('player');
 				// remove from player array
-				player.splice(player.indexOf(paths[path]), 1);
+				playerUnits.splice(playerUnits.indexOf(opponent), 1);
 			}else{
 				// otherwise decrement health 
-				paths[path].style.border = "1px solid #FF1919"; // red border to indicate damage
-				
-				paths[path].setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
+				opponent.style.border = "1px solid #FF1919"; // red border to indicate damage
+				opponent.setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
 				
 				// only show current health for boss nyasu for now 
 				if(paths[path].style.backgroundImage.match(/(nyasu7)/g)){
@@ -264,8 +268,8 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 				// do some animation to indicate attack 
 				setTimeout(function(){ $('#grid').effect("shake") }, 200);
 				
-				let enemyCell = paths[path]; // assign a letiable paths[path]. can't just change paths[path] border because then only the last one in the loop will be referenced
-				setTimeout(function(){ enemyCell.style.border = "1px solid #000"; console.log(paths[path]) }, 1000);
+				let enemyCell = opponent; // assign a letiable paths[path]. can't just change paths[path] border because then only the last one in the loop will be referenced
+				setTimeout(function(){ enemyCell.style.border = "1px solid #000" }, 1000);
 			}
 			return;
 		}

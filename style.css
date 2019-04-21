@@ -1,0 +1,57 @@
+#title{
+	text-align: center;
+	display: inline-block;
+	vertical-align: top;
+}
+body, html{
+	font-family: Arial;
+}
+#header{
+	text-align: center;
+		margin-bottom: 10px;
+}
+#enemyInfo, #playerOptions{
+	display: inline-block;
+}
+#playerOptions{
+	margin-left: 50px;
+}
+#grid{
+	position: relative;
+	border: 1px solid #000;
+	/*background-image: url('mapedit.png');*/
+	background-color:  #cccddd;
+	background-size: 100% 100%;
+	padding: 0;
+	margin: 0 auto;
+}
+#showCards{
+	display: block;
+	position: relative;
+	width: 100%;
+	height: auto;
+	text-align: center;
+}
+.card{
+	display: inline-block;
+	vertical-align: top;
+	height: 400px;
+	width: 250px;
+	border-radius: 20px;
+	border: 1px solid #000;
+	margin-left: 20px;
+	text-align: center;
+}
+#footer{
+	display: block;
+	position: relative;
+	margin-top: 5%;
+	height: 20px;
+	width: 100%;
+	text-align: center;
+}
+button{
+	border-radius: 7px;
+	background-color: #cccddd;
+	box-shadow: 1px 1px 1px 1px gray;
+}

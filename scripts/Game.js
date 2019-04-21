@@ -74,7 +74,7 @@ class Game {
 
 		//console.log("width: " + window.innerWidth + " height: " + window.innerHeight)
 		
-		let w = Math.round(Math.floor(window.innerWidth / width) / 10) * 10; // calculate width of cell
+		let w = Math.round(Math.floor(window.innerWidth / width) / 10) * 12; // calculate width of cell
 		let h = Math.round(Math.floor(window.innerHeight / height) / 10) * 8; // calculate height of cell
 		
 		//console.log("w: " + w + " h: " + h)
@@ -236,14 +236,14 @@ class Game {
 		
 		// get the parent of this element. this element should be a column cell, so the parent will be the row
 		let row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
-		let column = parseInt(element.id.match(/\d+/g)[0]);
+		let column = parseInt(element.id.match(/\d+/g)[1]);
 
 		// check top coord 
 		let topRow = document.getElementById("row" + (row - distance));
 		if(topRow){
 			topRow = topRow.childNodes;
 			for(let i = 0; i < topRow.length; i++){
-				let col = parseInt(topRow[i].id.match(/\d+/g)[0]);
+				let col = parseInt(topRow[i].id.match(/\d+/g)[1]);
 				if(col === column){
 					// if a top cell exists for given distance 
 					paths["top"] = topRow[i];
@@ -259,7 +259,7 @@ class Game {
 		if(bottomRow){
 			bottomRow = bottomRow.childNodes;
 			for(let i = 0; i < bottomRow.length; i++){
-				let col = parseInt(bottomRow[i].id.match(/\d+/g)[0]);
+				let col = parseInt(bottomRow[i].id.match(/\d+/g)[1]);
 				if(col === column){
 					// if a top cell exists for given distance 
 					paths["bottom"] = bottomRow[i];
@@ -274,7 +274,7 @@ class Game {
 		paths["left"] = null;
 		let currRow = element.parentNode.childNodes;
 		for(let i = 0; i < currRow.length; i++){
-			let newCol = parseInt(currRow[i].id.match(/\d+/g));
+			let newCol = parseInt(currRow[i].id.match(/\d+/g)[1]);
 			if(newCol === (column - distance)){
 				paths["left"] = currRow[i];
 				break;
@@ -284,7 +284,7 @@ class Game {
 		// check right coord 
 		paths["right"] = null;
 		for(let i = 0; i < currRow.length; i++){
-			let newCol = parseInt(currRow[i].id.match(/\d+/g));
+			let newCol = parseInt(currRow[i].id.match(/\d+/g)[1]);
 			if(newCol === (column + distance)){
 				paths["right"] = currRow[i];
 				break;

@@ -41,5 +41,26 @@ describe("check functions from Utils.js", () => {
 		
 	});
 	
+	it("test valid space", () => {
+		// a valid space (from the player's perspective) is a space that is in a column > 32 
+		let row = document.getElementsByTagName('table')[0].childNodes[0];
+		let aValidSpace = row.childNodes[34];
+		let invalidSpace = row.childNodes[2];
+		
+		// check that the border color has changed appropriately
+		let aValidSpaceBorderColorInitial = aValidSpace.style.border;
+		let invalidSpaceBorderColorInitial = invalidSpace.style.border;
+		
+		// simulate passing a mouse event to validSpace
+		let validMouseEvent = {'target': aValidSpace};
+		Utils.validSpace(validMouseEvent);
+		expect(aValidSpace.style.border).not.toEqual(aValidSpaceBorderColorInitial);
+		
+		let invalidMouseEvent = {'target': invalidSpace};
+		Utils.validSpace(invalidMouseEvent);
+		expect(invalidSpace.style.border).toEqual(invalidSpaceBorderColorInitial);
+		
+	});
+	
 	
 });

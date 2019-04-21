@@ -61,10 +61,10 @@ function getCell(row, col){
 
 // highlight valid cell to place unit within player's territory
 function validSpace(e){
-	let findDigit = e.target.id.match(/\d+/);
+	let findDigit = e.target.id.match(/\d+/g);
 	
 	if(findDigit !== null){
-		let col = parseInt( e.target.id.match(/\d+/)[0] );
+		let col = parseInt( findDigit[1] );
 	
 		// come up with a separate function to determine whether a square is within player territory
 		if(col > 32){
@@ -90,9 +90,9 @@ function selectEnemyOut(e){
 
 // when moving over grid cells, de-highlight cells passed over if cursor moves to another cell 
 function leaveSpace(e){
-	let findDigit = e.target.id.match(/\d+/);
+	let findDigit = e.target.id.match(/\d+/g);
 	if(findDigit !== null){
-		let col = parseInt( e.target.id.match(/\d+/)[0] );
+		let col = parseInt( e.target.id.match(/\d+/g)[1] );
 		// come up with a separate function to determine whether a square is within player territory
 		if(col > 32){
 			e.target.style.border = "1px solid #000";

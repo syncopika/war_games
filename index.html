@@ -8,72 +8,12 @@
 	<!-- 
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 	-->
+	<link rel="stylesheet" href="style.css">
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 	<script src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js'></script>
 	<script src="https://unpkg.com/react@16.4.1/umd/react.production.min.js"></script>
 	<script src="https://unpkg.com/react-dom@16.4.1/umd/react-dom.production.min.js"></script>
 </head>
-
-<style>
-	#title{
-		text-align: center;
-		display: inline-block;
-		vertical-align: top;
-	}
-	body, html{
-		font-family: Arial;
-	}
-	#header{
-		text-align: center;
-			margin-bottom: 10px;
-	}
-	#enemyInfo, #playerOptions{
-		display: inline-block;
-	}
-	#playerOptions{
-		margin-left: 50px;
-	}
-	#grid{
-		position: relative;
-		border: 1px solid #000;
-		/*background-image: url('mapedit.png');*/
-		background-color:  #cccddd;
-		background-size: 100% 100%;
-		padding: 0;
-		margin: 0 auto;
-	}
-	#showCards{
-		display: block;
-		position: relative;
-		width: 100%;
-		height: auto;
-		text-align: center;
-	}
-	.card{
-		display: inline-block;
-		vertical-align: top;
-		height: 400px;
-		width: 250px;
-		border-radius: 20px;
-		border: 1px solid #000;
-		margin-left: 20px;
-		text-align: center;
-	}
-	#footer{
-		display: block;
-		position: relative;
-		margin-top: 5%;
-		height: 20px;
-		width: 100%;
-		text-align: center;
-	}
-	button{
-		border-radius: 7px;
-		background-color: #cccddd;
-		box-shadow: 1px 1px 1px 1px gray;
-	}
-
-</style>
 
 <body>
 
@@ -86,7 +26,7 @@
 	</div>
 	
 	<div id='title'>
-		<h3> 2d turn-based war game idea </h3>
+		<h3> 2d turn-based game idea </h3>
 		<p> click on the cat on the grid to move. </p>
 		<p> click on an adjacent enemy unit to do damage, or on any enemy unit to get info. </p> 
 		<p> click on 'draw cards' to get some new abilities. </p>
@@ -95,7 +35,7 @@
 	
 	<div id='playerOptions'>
 		<h3> player info </h3>
-		<span><img src='./assets/nyasu7.png' id='player' width='100px' height='90px'></img></span> 
+		<span><img src='./assets/catadmiral.png' id='player' width='90px' height='120px'></img></span> 
 		<h3> player's health: <span id='playerHealth'> 100 </span></h3>
 		<button id='drawCards'> draw cards </button>
 		<button id='endTurn'> end turn </button>
@@ -219,15 +159,15 @@ function initialState(length, height){
 	
 	// randomly place nyasu 
 	// function placeRandom(element, health, attack, leftBound, rightBound, bottomBound, topBound, stats)
-	gameInstance.placeRandom("./assets/nyasu7.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+	gameInstance.placeRandom("./assets/catadmiral.png", length - 10, length, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 	
 	// place enemies 
 	for(let i = 0; i < 10; i++){
-		gameInstance.placeRandom("./assets/shiina2.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
+		gameInstance.placeRandom("./assets/gasmask.png", 0, length, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 	}
 	
 	// place enemy boss
-	gameInstance.placeRandom("./assets/umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
+	gameInstance.placeRandom("./assets/enemyboss1.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 	
 	// place obstacles
 	for(let i = 0; i < 15; i++){
@@ -246,8 +186,8 @@ document.addEventListener('click', function(e){
 		let end = e.target.style.backgroundImage.indexOf(")") - 1;   // not inclusive
 		let imgSrc = e.target.style.backgroundImage.substring(start, end);
 		document.getElementById('selectedEnemy').setAttribute('src', imgSrc);
-		document.getElementById('selectedEnemy').setAttribute('width', 100);
-		document.getElementById('selectedEnemy').setAttribute('height', 90);
+		document.getElementById('selectedEnemy').setAttribute('width', 90);
+		document.getElementById('selectedEnemy').setAttribute('height', 120);
 		document.getElementById('enemyHealth').textContent = e.target.getAttribute("health");
 	}
 });

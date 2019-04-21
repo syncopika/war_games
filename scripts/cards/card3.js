@@ -3,7 +3,7 @@ import { getPathsDefault, selectEnemyOn, selectEnemyOut } from './../Utils.js';
 
 const BearAttack = new Card(
 "bear attack",
-"./assets/aoba6.png",
+"./assets/bearattack.png",
 function(gameInstance, name){
 	
 	let currentUnit = gameInstance.currentUnit;
