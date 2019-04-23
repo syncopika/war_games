@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { Game } from "../../scripts/Game.js";
-import { dfs } from "../../scripts/enemyAI.js";
+import { dfs, aStar } from "../../scripts/enemyAI.js";
 
 
 // coords = map where key = row, value = array of col numbers
@@ -86,6 +86,26 @@ describe("check functions from enemyAI.js", () => {
 		expect(path[1]).toEqual("row0column2");
 		expect(path[2]).toEqual("row1column2");
 		expect(path[3]).toEqual("row2column2");
+	});
+	
+	
+	/*
+		test A* algorithm
+		
+		x to y -> row0col0 to row2col2
+		
+		x - - - - 
+		- - - - -
+	    - - y - -
+		- - - - -
+		- - - - -
+	
+	*/
+	it('test A* 1', () => {
+		let start = document.getElementById('row0').childNodes[0];
+		let toFind = document.getElementById('row2').childNodes[2];
+		let path = aStar(start, toFind, new Set());
+		console.log(path);
 	});
 	
 });

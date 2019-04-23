@@ -9,8 +9,6 @@ function getPathsDefault(element){
 	// this element will return the top, bottom, left and right blocks
 	let paths = {};
 	
-	// get the parent of this element. this element should be a column cell, so the parent will be the row
-	let row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
 	let column = parseInt(element.id.match(/\d+/g)[1]);
 	
 	// top coordinate is row - 1, same column num

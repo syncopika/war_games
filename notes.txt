@@ -12,4 +12,8 @@ as if you have React components and use JSX, Babel is needed. unfortunately, you
 
 4. babel-loader -> for webpack 
 
-5. babel-register -> transpiles files on the fly by binding Node's require method. 
+5. babel-register -> transpiles files on the fly by binding Node's require method.
+
+Since we are bundling the Javascript, the old Javascript to initiate the game originally in 
+index.html can now be moved to the entry point of the bundle. Note that we use jQuery to wait 
+until the page has loaded before running the bundle!

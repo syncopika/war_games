@@ -35,7 +35,7 @@ class CardDisplay extends React.Component{
 		};
 		
 		return(
-			<div class="card">
+			<div className="card">
 				<div style={titleStyle}>
 					{this.state.name}
 				</div>

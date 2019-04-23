@@ -111,6 +111,7 @@ function enemyMovement(enemyElement, enemyUnits, playerUnits){
 	enemyElement.style.backgroundImage = "";
 }
 
+// regular depth first search using a stack 
 function dfs(element, elementToFind, enemySet){
 	if(element === elementToFind){
 		return [];
@@ -222,6 +223,112 @@ function dfs(element, elementToFind, enemySet){
 	return pathToFollow;
 }
 
+// Manhattan distance 
+function manhattan(sourceX, sourceY, goalX, goalY){
+	let xDiff = Math.abs(sourceX - goalX);
+	let yDiff = Math.abs(sourceY - goalY);
+	return xDiff + yDiff;
+}
+
+// A* algorithm 
+// it uses the Manhattan distance as a heuristic
+// https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
+// https://www.geeksforgeeks.org/a-search-algorithm/
+// https://www.growingwiththeweb.com/2012/06/a-pathfinding-algorithm.html
+function aStar(element, elementToFind, enemySet){
+	
+	if(element === elementToFind){
+		return [];
+	}
+	
+	if(elementToFind === undefined){
+		return [];
+	}
+	
+	// keep a table of parents and their distances 
+	let parentTable = {};
+	let closed = new Set();
+	let open = new Set();
+	let map = {}; // for backtracking the path 
+	
+	// initial setup
+	parentTable[element.id] = 0;
+	open.add(element);
+	
+	while(open.size !== 0){
+		// find the element with the smallest f value
+		// smallestF will be the id of a grid cell 
+		let smallestF = null;
+		let currSmallestF = null;
+		open.forEach((el) => {
+			let val = parentTable[el.id];
+			if(smallestF === null || val < currSmallestF){
+				smallestF = el;
+				currSmallestF = val;
+			}
+		});
+		//console.log(currSmallestF);
+		//console.log("---------");
+		
+		// remove smallestF from open, add to closed 
+		open.delete(smallestF);
+		closed.add(smallestF.id);
+		
+		if(smallestF === elementToFind){
+			break;
+		}
+
+		// get the adjacent nodes of smallestF 
+		let paths = getPathsDefault(smallestF);
+		for(let dir in paths){
+			
+			let neighbor = paths[dir];
+			
+			if(neighbor === null){
+				// you should just not include directions that have a null path?
+				// so you don't have to check...
+				continue;
+			}
+			if(neighbor.className === "obstacle" || enemySet.has(neighbor)){
+				continue;
+			}
+			if(closed.has(neighbor.id)){
+				continue;
+			}
+			 
+			closed.add(neighbor.id);
+			
+			// now calculate f(g+h), g(current total distance from source) and h(heuristic using current neighbor and goal positions)
+			// add 1 since each neighbor is always just 1 away from smallestF, our current node 
+			let g = parentTable[smallestF.id] + 1;
+			let sourceX = parseInt(neighbor.id.match(/\d+/g)[1]); // column of neighbor
+			let sourceY = parseInt(neighbor.id.match(/\d+/g)[0]); // row of neighbor 
+			let goalX = parseInt(elementToFind.id.match(/\d+/g)[1]); 
+			let goalY = parseInt(elementToFind.id.match(/\d+/g)[0]); 
+			let h = manhattan(sourceX, sourceY, goalX, goalY);
+			let f = g + h;
+			
+			// then check if this neighbor is already in the open set.
+			// if so, then they already have an entry in parentTable and we should 
+			// compare the currently stored g value of this neighbor with the g we just calculated 
+			if(open.has(neighbor)){
+				if(g > parentTable[neighbor.id]){
+					// we're not interested in this neighbor since their cost is higher than what's already been stored 
+					continue;
+				}
+			}else{
+				parentTable[neighbor.id] = f; // set this neighbor's g value to be f in the parentTable for its neighbors 
+				open.add(neighbor);
+				
+				// neighbor is mapped to current smallestF, or the 'parent'
+				map[neighbor.id] = smallestF.id;
+			}
+		}
+	}
+	console.log(parentTable);
+	return map;
+}
+
 
 // another kind of enemy movement - not very fast or precise
 // https://www.redblobgames.com/pathfinding/grids/algorithms.html
@@ -260,7 +367,7 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 				opponent.style.border = "1px solid #FF1919"; // red border to indicate damage
 				opponent.setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
 				
-				// only show current health for boss nyasu for now 
+				// only show current health for cat boss for now 
 				if(paths[path].style.backgroundImage.match(/(nyasu7)/g)){
 					document.getElementById('playerHealth').textContent = "" + opponentHealth - enemyElement.getAttribute('attack');
 				}
@@ -318,4 +425,4 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 	enemyElement.style.backgroundImage = "";
 }
 
-export { enemyMovement, enemyMovement2, dfs };
+export { enemyMovement, enemyMovement2, dfs, aStar };
