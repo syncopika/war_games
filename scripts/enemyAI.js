@@ -219,8 +219,7 @@ function dfs(element, elementToFind, enemySet){
 	pathToFollow.pop();
 	
 	// list of ids!
-	pathToFollow.reverse();
-	return pathToFollow;
+	return pathToFollow.reverse();
 }
 
 // Manhattan distance 
@@ -325,8 +324,20 @@ function aStar(element, elementToFind, enemySet){
 			}
 		}
 	}
-	console.log(parentTable);
-	return map;
+	//console.log(parentTable);
+	
+	// backtrack to get the path to the target 
+	let pathToFollow = [];
+	let node = elementToFind.id;
+	
+	// keep iterating until we reach the node we started on, i.e. element
+	while(node !== element.id){
+		//console.log(node);
+		pathToFollow.push(node);
+		node = map[node];
+	}
+	
+	return pathToFollow.reverse();
 }
 
 
@@ -392,20 +403,18 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 	let unitToFind = playerUnits[randIndex];
 	
 	// calculate a path to that target 
-	let path = dfs(enemyElement, unitToFind, enemies);
+	let path = aStar(enemyElement, unitToFind, enemies); //dfs(enemyElement, unitToFind, enemies);
 	
 	if(path.length === 0){
 		// enemy can't move 
 		return;
 	}
-	
-	/*
-	// checking out paths generated...
-	path.forEach((p) => {
-		let colors = ['blue','red','pink','yellow','green','orange'];
-		let rand = Math.floor(Math.random() * colors.length);
-		document.getElementById(p).style.backgroundColor = colors[rand]; //'pink';
-	});)*/
+
+	// checking out paths generated...probably should slow it down a bit...
+	let prevPathElement = path[0];
+	document.getElementById(prevPathElement).style.backgroundColor = '#53cc2a';
+	window.requestAnimationFrame((timestamp)=>{highlightPath(timestamp, prevPathElement, 0, path, '#53cc2a')});
+
 	
 	// go to the first element from the path 
 	let newCell = document.getElementById(path[0]);
@@ -423,6 +432,17 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 	
 	enemyElement.classList.remove("enemy");
 	enemyElement.style.backgroundImage = "";
+}
+
+// show the path from a unit to the target 
+function highlightPath(timestamp, lastElement, index, path, color){
+	document.getElementById(lastElement).style.backgroundColor = "";
+	if(index === path.length){
+		return;
+	}
+	document.getElementById(path[index]).style.backgroundColor = color;//'#53cc2a'; #f794ed
+	
+	setTimeout(() => window.requestAnimationFrame((timestamp) => highlightPath(timestamp, path[index], index+1, path, color)), 50);
 }
 
 export { enemyMovement, enemyMovement2, dfs, aStar };

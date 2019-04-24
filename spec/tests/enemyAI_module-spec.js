@@ -105,7 +105,9 @@ describe("check functions from enemyAI.js", () => {
 		let start = document.getElementById('row0').childNodes[0];
 		let toFind = document.getElementById('row2').childNodes[2];
 		let path = aStar(start, toFind, new Set());
-		console.log(path);
+		//console.log(path);
+		
+		expect(path[path.length-1]).toEqual(toFind.id);
 	});
 	
 });
