@@ -218,9 +218,9 @@ class Game {
 		@enemyAI = a function that tells each enemy unit how to move 
 	
 	******/
-	enemyTurn(enemyAI){
+	enemyTurn(enemyAI, searchMethod){
 		for(let i = 0; i < this.enemyUnits.length; i++){
-			enemyAI(this.enemyUnits[i], this.enemyUnits, this.playerUnits);
+			enemyAI(this.enemyUnits[i], this.enemyUnits, this.playerUnits, searchMethod);
 		}
 		alert('enemy ended turn');
 	}

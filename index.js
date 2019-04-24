@@ -45,10 +45,11 @@ $(function(){
 	// set up units initially 
 	initialState(length, height);
 
-
 	// hook up end turn button with enemyTurn function 
+	// get the selected enemyAI search method (i.e. dfs, A*)
 	document.getElementById('endTurn').addEventListener('click', function(){
-		gameInstance.enemyTurn(enemyMovement2);
+		let selectedMethod = $('#searchMethod :selected').text();
+		gameInstance.enemyTurn(enemyMovement2, selectedMethod);
 	});
 
 	// load player's deck 

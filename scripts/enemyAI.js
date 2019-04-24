@@ -344,7 +344,7 @@ function aStar(element, elementToFind, enemySet){
 // another kind of enemy movement - not very fast or precise
 // https://www.redblobgames.com/pathfinding/grids/algorithms.html
 // https://stackoverflow.com/questions/12864004/tracing-and-returning-a-path-in-depth-first-search
-function enemyMovement2(enemyElement, enemyUnits, playerUnits){
+function enemyMovement2(enemyElement, enemyUnits, playerUnits, searchMethod){
 	
 	// if enemy is adjacent, attack 
 	let paths = getPathsDefault(enemyElement);
@@ -403,7 +403,15 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 	let unitToFind = playerUnits[randIndex];
 	
 	// calculate a path to that target 
-	let path = aStar(enemyElement, unitToFind, enemies); //dfs(enemyElement, unitToFind, enemies);
+	let path;
+	let color;
+	if(searchMethod === "A*"){
+		path = aStar(enemyElement, unitToFind, enemies); //dfs(enemyElement, unitToFind, enemies);
+		color = '#53cc2a';
+	}else{
+		path = dfs(enemyElement, unitToFind, enemies);
+		color = '#f794ed';
+	}
 	
 	if(path.length === 0){
 		// enemy can't move 
@@ -412,8 +420,8 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits){
 
 	// checking out paths generated...probably should slow it down a bit...
 	let prevPathElement = path[0];
-	document.getElementById(prevPathElement).style.backgroundColor = '#53cc2a';
-	window.requestAnimationFrame((timestamp)=>{highlightPath(timestamp, prevPathElement, 0, path, '#53cc2a')});
+	document.getElementById(prevPathElement).style.backgroundColor = color; //'#53cc2a';
+	window.requestAnimationFrame((timestamp)=>{highlightPath(timestamp, prevPathElement, 0, path, color)});
 
 	
 	// go to the first element from the path 
