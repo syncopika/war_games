@@ -14,7 +14,7 @@ const GameConsole = (props) => {
 	};
 			
 	return(
-		React.createElement('div', {style: consoleStyle}, props.consoleDialog.map((line, i) => {
+		React.createElement('div', {style: consoleStyle}, props.consoleMsgs.map((line, i) => {
 			return React.createElement('p', {key: i}, `${line}`);
 		}))
 	);

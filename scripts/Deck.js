@@ -1,7 +1,7 @@
 class Deck {
 
-	constructor(){
-		this.theDeck = [];
+	constructor(deck){
+		this.theDeck = deck || [];
 	}
 	
 	// add card to deck 

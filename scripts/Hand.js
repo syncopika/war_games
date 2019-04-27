@@ -48,7 +48,7 @@ class CardDisplay extends React.Component{
 					{this.state.description}
 				</div>
 				
-				<button style={buttonStyle} onClick={this.state.ability}>
+				<button disabled={true} style={buttonStyle} onClick={this.state.ability}>
 					activate
 				</button>
 			</div>
@@ -68,42 +68,44 @@ class CardDisplay extends React.Component{
 
 }
 
-class CurrentHand extends React.Component {
+const CurrentHand = (props) => {
 
+/*
 	constructor(props){
 		super(props);
 		this.state = {
-			'numCardsPerHand':  this.props.numCardsPerHand,
+			'numCardsPerHand': this.props.numCardsPerHand,
 			'cards': this.props.cards,
 			'cardStates': Array(this.props.numCardsPerHand).fill(true), 
 			'gameInstance': this.props.gameInstance
 		}
 	}
-
+*/
+	
 	// on updating arrays in state: https://stackoverflow.com/questions/26253351/correct-modification-of-state-arrays-in-reactjs
-	render(){
-		let cardDisplays = this.state.cards.map((card, i) => { 
-			if(this.state.cardStates[i] === true){
-				return React.createElement(CardDisplay, {
-					key: i, // key is special so it can't be accessed from props (will just be 'undefined')
-					index: i,
-					name: card.name, 
-					image: card.image, 
-					description: card.description, 
-					ability: () => { 
-						card.ability(this.props.gameInstance, card.name); 
-						// make it so that after the ability is activated, this hand is immediately notified that the card has been used and should be 
-						// eliminated from view 
-						this.setState((state) => { let copy = [...state.cardStates]; copy[i] = false; return {'cardStates': copy} }); 
-					}
-				});	
-			}
+	//render(){
+		let cardDisplays = props.cards.map((card, i) => { 
+			return React.createElement(CardDisplay, {
+				key: i, // key is special so it can't be accessed from props (will just be 'undefined')
+				index: i,
+				name: card.name, 
+				image: card.image, 
+				description: card.description, 
+				ability: () => { 
+					card.ability(null, card.name); 
+					// make it so that after the ability is activated, this hand is immediately notified that the card has been used and should be 
+					// eliminated from view 
+					
+					// use a function passed as a prop to update Game state 
+					//this.setState((state) => { let copy = [...state.cardStates]; copy[i] = false; return {'cardStates': copy} }); 
+				}
+			});	
 		});
 
 		return(
-			React.createElement('div', null, cardDisplays)
-		)
-	}
+			React.createElement('div', {id: 'showCards'}, cardDisplays)
+		);
+	//}
 
 }
 

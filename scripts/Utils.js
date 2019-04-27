@@ -45,6 +45,75 @@ function getPathsDefault(element){
 	return paths;
 }
 
+/*****
+
+	get attack range of unit 
+	
+*******/
+function getAttackRange(element, distance){
+	// this element will return the top, bottom, left and right blocks
+	let paths = {};
+	
+	// get the parent of this element. this element should be a column cell, so the parent will be the row
+	let row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
+	let column = parseInt(element.id.match(/\d+/g)[1]);
+
+	// check top coord 
+	let topRow = document.getElementById("row" + (row - distance));
+	if(topRow){
+		topRow = topRow.childNodes;
+		for(let i = 0; i < topRow.length; i++){
+			let col = parseInt(topRow[i].id.match(/\d+/g)[1]);
+			if(col === column){
+				// if a top cell exists for given distance 
+				paths["top"] = topRow[i];
+				break;
+			}
+		}
+	}else{
+		paths["top"] = null;
+	}
+	
+	// check bottom coord 
+	let bottomRow = document.getElementById("row" + (row + distance));
+	if(bottomRow){
+		bottomRow = bottomRow.childNodes;
+		for(let i = 0; i < bottomRow.length; i++){
+			let col = parseInt(bottomRow[i].id.match(/\d+/g)[1]);
+			if(col === column){
+				// if a top cell exists for given distance 
+				paths["bottom"] = bottomRow[i];
+				break;
+			}
+		}
+	}else{
+		paths["bottom"] = null;
+	}
+	
+	// check left coord 
+	paths["left"] = null;
+	let currRow = element.parentNode.childNodes;
+	for(let i = 0; i < currRow.length; i++){
+		let newCol = parseInt(currRow[i].id.match(/\d+/g)[1]);
+		if(newCol === (column - distance)){
+			paths["left"] = currRow[i];
+			break;
+		}
+	}
+	
+	// check right coord 
+	paths["right"] = null;
+	for(let i = 0; i < currRow.length; i++){
+		let newCol = parseInt(currRow[i].id.match(/\d+/g)[1]);
+		if(newCol === (column + distance)){
+			paths["right"] = currRow[i];
+			break;
+		}
+	}
+	
+	return paths;
+}
+
 // get the DOM element that represents a cell in the grid given a row and column. 
 function getCell(row, col){
 	// changing let to var here stopped Chrome from complaining. why?
@@ -99,4 +168,4 @@ function leaveSpace(e){
 	}
 }
 
-export { getPathsDefault, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut };
+export { getPathsDefault, getAttackRange, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut };

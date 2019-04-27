@@ -2,149 +2,94 @@ import { getPathsDefault, getCell } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
 import { GameConsole } from './GameConsole.js';
+import { Header } from './Header.js';
+import { Grid } from './Grid.js';
+import { enemyMovement, enemyMovement2 } from "./enemyAI.js";
 
-class Game {
-	constructor(){
-		this.playerUnits = [];
-		this.enemyUnits = [];
-	
-		this.gameGridElement = null;
-	
-		this.playerDeck = new Deck();
-		this.enemyDeck = new Deck();
-		this.handSize = 4; // how many cards a hand can have at a time 
-		this.consoleDialog = [];
-		this.consoleElement = null; // assign the dom element that's supposed to hold the console 
-	
-		this.currentUnit = null;	
-	}
-	
-	refreshConsole(msg){
-		this.consoleDialog.push(msg);
-		if(this.consoleElement === null){
-			let consoleEl = document.createElement('div');
-			document.body.appendChild(consoleEl);
-			this.consoleElement = consoleEl;
-		}
-		ReactDOM.render(React.createElement(GameConsole, {consoleDialog: this.consoleDialog}), this.consoleElement);
-	}
-	
-	clearEnemyUnits(){
-		this.enemyUnits = [];
-	}
-	
-	clearPlayerUnits(){
-		this.playerUnits = [];
-	}
-	
-	setHandSize(newSize){
-		this.handSize = newSize;
-	}
-	
-	explosionAnimation(timestamp, num, canvas){
-		if(num > 6){
-			return;
-		}
-		let nextImage = new Image();
-		nextImage.src = './explosion_animation/' + num + '.png';
 
-		nextImage.onload = () => {
-			let ctx = canvas.getContext('2d');
-			ctx.clearRect(0,0,canvas.width,canvas.height);
-			ctx.drawImage(nextImage,0,0,nextImage.width,nextImage.height);
-			window.requestAnimationFrame((timestamp) => this.explosionAnimation(timestamp, num+1, canvas));
-		}
-	}
-	
-	/*****
+import { CompleteDomination } from "./cards/card1.js";
+import { PancakeSniper } from "./cards/card2.js";
+import { BearAttack } from "./cards/card3.js";
 
-		create the grid map 
-		pass in the width as the number of cells wide the grid should be 
-		pass in the height as in the number of rows the grid should have 
-
-	******/
-	createGrid(width, height, parentElement){
-		
-		this.gameGridElement = parentElement;
-		this.refreshConsole("game started");
-		
-		let thisGameInstance = this;
-
-		let parent = parentElement;
-
-		//console.log("width: " + window.innerWidth + " height: " + window.innerHeight)
-		
-		let w = Math.round(Math.floor(window.innerWidth / width) / 10) * 12; // calculate width of cell
-		let h = Math.round(Math.floor(window.innerHeight / height) / 10) * 8; // calculate height of cell
-		
-		//console.log("w: " + w + " h: " + h)
-		parent.style.padding = "5px";
-		
-		let table = document.createElement('table');
-		
-		for(let i = 0; i < height; i++){
-			let newRow = document.createElement('tr');
-			newRow.style.width = "100%";
-			newRow.id = 'row' + i;
-			newRow.style.padding = "0";
-			newRow.style.margin = "0";
-			
-			// if grid is 15 x 36, width per cell should be ~50, height ~40 
-			for(let j = 0; j < width; j++){
-
-				let newColumn = document.createElement('td');
-				newColumn.style.border = '1px solid #000';
-				newColumn.style.width = w + "px"; 
-				newColumn.style.height = h + "px"; 
-				newColumn.style.backgroundSize = "100% 100%";
-				newColumn.id = newRow.id + 'column' + j;
-				newColumn.setAttribute('pathLight', 0); // 0 == pathLight is off 
-				
-				// bind click event to highlight paths 
-				newColumn.addEventListener('click', () => { thisGameInstance.activeObject(newColumn, thisGameInstance.playerUnits); });
-				//newColumn.addEventListener('click', function(){ thisGameInstance.activeObject(this, thisGameInstance.playerUnits); });   //note the difference from the arrow function!
-				
-				// bind click event to move unit 
-				newColumn.addEventListener('click', () => {thisGameInstance.moveUnit(newColumn); });
-				
-				newRow.appendChild(newColumn);
-			}
-			table.appendChild(newRow);
+class Game extends React.Component{
+	constructor(props){
+		super(props);
+		this.state = {
+			'width': 36,
+			'height': 15,
+			'playerUnits': [],
+			'enemyUnits': [],
+			'playerDeck': new Deck([PancakeSniper, CompleteDomination, BearAttack]),
+			'enemyDeck': new Deck(),
+			'handSize': this.props.handSize, //4; // how many cards a hand can have at a time 
+			'playerHand': [],   // the cards the player currently holds
+			'enemyHand': [],  // the cards the opponent currently holds
+			'consoleMsgs': [],
+			'enemyScore': 0,
+			'playerScore': 0,
+			'currentEnemyUnit': null, // for displaying info of the current enemy selected
+			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
+			'playerTurn': true // boolean indicating if player's turn or not
 		}
 		
-		parent.appendChild(table);	
+		// methods for binding to pass to child components 
+		this.drawCards = this.drawCards.bind(this);
+		this.endPlayerTurn = this.endPlayerTurn.bind(this);
+		this.endEnemyTurn = this.endEnemyTurn.bind(this);
+		this.updateConsole = this.updateConsole.bind(this);
+		this.selectEnemyUnit = this.selectEnemyUnit.bind(this);
+		this.selectPlayerUnit = this.selectPlayerUnit.bind(this);
+		this.updatePlayerUnitsAtIndex = this.updatePlayerUnitsAtIndex.bind(this);
+		this.removeFromEnemyUnits = this.removeFromEnemyUnits.bind(this);
+		this.addToEnemyUnits = this.addToEnemyUnits.bind(this);
+		this.addToPlayerUnits = this.addToPlayerUnits.bind(this);
 	}
 	
 	/*** 
-		draw a new hand (pull 3 cards) for the player 
-		@gameInstance = instance of Game object 
+		create the initial state of the game after all the DOM elements have been added 
 	***/
-	drawCards(){	
-		let deck = this.playerDeck;
-		
-		if(deck.length === 0){
-			return;
-		}
-		
-		// shuffle deck first?
+	componentDidMount(){
+		let self = this;
+		let width = self.state.width;
+		let height = self.state.height;
 	
-		let max = this.handSize;
-		if(deck.length <= 2 && deck.length >= 1){
-			max = deck.length;
+		// add event listeners
+		document.addEventListener('click', function(e){
+			if(e.target.className === "enemy"){
+				// tell parent Game component about the currently selected enemy to display its info 
+				self.selectEnemyUnit(e.target);
+			}
+		});
+		
+		// bind click event to highlight paths
+		for(let i = 0; i < height; i++){
+			for(let j = 0; j < width; j++){
+				let cell = document.getElementById('row' + i + 'column' + j);
+				cell.addEventListener('click', () => { self.activeObject(cell, self.state.playerUnits); });
+				cell.addEventListener('click', () => { self.moveUnit(cell); });
+			}
 		}
 		
-		// if player already has some cards, the number of cards drawn can't exceed handSize!
-		let cardsDrawn = [];
-		for(let i = 1; i < max; i++){
-			cardsDrawn.push(deck.remove());
+		// populate map 
+		self.placeRandom("./assets/catadmiral.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+		
+		// place enemies 
+		for(let i = 0; i < 10; i++){
+			self.placeRandom("./assets/gasmask.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 		}
 		
-		// to do later: don't hardcode the container
-		this.refreshConsole("player drew " + cardsDrawn.length + " cards!");
-		ReactDOM.render(React.createElement(CurrentHand, {numCardsPerHand: max, cards: cardsDrawn, gameInstance: this}), document.getElementById('showCards'));
+		// place enemy boss
+		self.placeRandom("./assets/enemyboss1.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 		
+		// place obstacles
+		for(let i = 0; i < 17; i++){
+			self.placeObstacles(0, width, 0, height);
+		}
 	}
-
+	
+	/***
+		functions for creating initial state of game 
+	***/
 	
 	/****
 		place unit in random location
@@ -185,17 +130,14 @@ class Game {
 		
 		// enemyUnits need to be pushed into the enemyUnits array
 		if(stats["className"] === "enemy"){
-			this.enemyUnits.push(randCell);
+			this.addToEnemyUnits(randCell);
+			
 		}else if(stats["className"] === "player"){
-			this.playerUnits.push(randCell);
+			this.addToPlayerUnits(randCell);
 		}
 	}
 	
-	/*****
-	
-		place obstacles randomly
-	
-	******/
+	// place obstacles randomly
 	placeObstacles(leftBound, rightBound, bottomBound, topBound){
 		let randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
 		let randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
@@ -211,113 +153,24 @@ class Game {
 		randCell.className = "obstacle";
 	}
 	
-	
-	/*****
-	
-		enemy's turn 
-		@enemyAI = a function that tells each enemy unit how to move 
-	
-	******/
-	enemyTurn(enemyAI, searchMethod){
-		for(let i = 0; i < this.enemyUnits.length; i++){
-			enemyAI(this.enemyUnits[i], this.enemyUnits, this.playerUnits, searchMethod);
-		}
-		alert('enemy ended turn');
-	}
-	
-	/*****
-
-		get attack range of unit 
-		
-	*******/
-	getAttackRange(element, distance){
-		// this element will return the top, bottom, left and right blocks
-		let paths = {};
-		
-		// get the parent of this element. this element should be a column cell, so the parent will be the row
-		let row = parseInt(element.parentNode.id.match(/\d+/g)[0]);
-		let column = parseInt(element.id.match(/\d+/g)[1]);
-
-		// check top coord 
-		let topRow = document.getElementById("row" + (row - distance));
-		if(topRow){
-			topRow = topRow.childNodes;
-			for(let i = 0; i < topRow.length; i++){
-				let col = parseInt(topRow[i].id.match(/\d+/g)[1]);
-				if(col === column){
-					// if a top cell exists for given distance 
-					paths["top"] = topRow[i];
-					break;
-				}
-			}
-		}else{
-			paths["top"] = null;
-		}
-		
-		// check bottom coord 
-		let bottomRow = document.getElementById("row" + (row + distance));
-		if(bottomRow){
-			bottomRow = bottomRow.childNodes;
-			for(let i = 0; i < bottomRow.length; i++){
-				let col = parseInt(bottomRow[i].id.match(/\d+/g)[1]);
-				if(col === column){
-					// if a top cell exists for given distance 
-					paths["bottom"] = bottomRow[i];
-					break;
-				}
-			}
-		}else{
-			paths["bottom"] = null;
-		}
-		
-		// check left coord 
-		paths["left"] = null;
-		let currRow = element.parentNode.childNodes;
-		for(let i = 0; i < currRow.length; i++){
-			let newCol = parseInt(currRow[i].id.match(/\d+/g)[1]);
-			if(newCol === (column - distance)){
-				paths["left"] = currRow[i];
-				break;
-			}
-		}
-		
-		// check right coord 
-		paths["right"] = null;
-		for(let i = 0; i < currRow.length; i++){
-			let newCol = parseInt(currRow[i].id.match(/\d+/g)[1]);
-			if(newCol === (column + distance)){
-				paths["right"] = currRow[i];
-				break;
-			}
-		}
-		
-		return paths;
-	}
-	// make function accessible from the outside as well
-	//this.getAttackRange = getAttackRange;
-	
-		
 	/****
 	
 		show paths when clicking on unit
 		
 	****/
 	activeObject(currElement, playerList){
+		
+		//console.log(playerList.length);
 
 		// only the player can select/move their own units 
 		if(!playerList.includes(currElement)){
 			return;
 		}
 		
-		// update header in top of page to show current unit selected and current health
-		// this makes some assumptions of the id's of the relevant elements in the header 
-		let imgUrl = currElement.style.backgroundImage; // need to eliminate the 'url()' part from the string 
-		imgUrl = imgUrl.substring(imgUrl.indexOf('"')+1, imgUrl.indexOf(')')-1);  // note that this means the actual file path should not have quotes or parentheses!
-		document.getElementById('player').setAttribute('src', imgUrl);
-		document.getElementById('playerHealth').textContent = currElement.getAttribute("health");
-
+		// also can only move if it's the player's turn 
+		
 		// what kind of unit is it?
-		if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 0){
+		if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathlight') == 0){
 			// light up the paths 
 			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
@@ -325,12 +178,12 @@ class Game {
 					elementPaths[key].style.border = "1px solid #dddfff";
 				}
 			}
-			currElement.setAttribute('pathLight', 1);
-			this.currentUnit = currElement;
+			currElement.setAttribute('pathlight', 1);
+			this.selectPlayerUnit(currElement);
 			
 			// if special unit, show attack paths 
 			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = this.getAttackRange(currElement, 2);
+				let attackRange = getAttackRange(currElement, 2);
 				for(let path in attackRange){
 					if(attackRange[path]){
 						attackRange[path].style.border = "1px solid #FF1919";
@@ -338,7 +191,7 @@ class Game {
 				}
 			}
 			
-		}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathLight') == 1){
+		}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathlight') == 1){
 			// this is deselecting a unit 
 			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
@@ -350,7 +203,7 @@ class Game {
 			
 			// if special unit, un-highlight attack paths also
 			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = this.getAttackRange(currElement, 2);
+				let attackRange = getAttackRange(currElement, 2);
 				for(let path in attackRange){
 					if(attackRange[path]){
 						attackRange[path].style.border = "1px solid #000";
@@ -358,11 +211,26 @@ class Game {
 				}
 			}
 			
-			currElement.setAttribute('pathLight', 0);
-			this.currentUnit = null;
+			currElement.setAttribute('pathlight', 0);
+			this.selectPlayerUnit(null);
 		}
 	}
+	
+	// explosion animation for when enemy unit is destroyed
+	explosionAnimation(timestamp, num, canvas){
+		if(num > 6){
+			return;
+		}
+		let nextImage = new Image();
+		nextImage.src = './explosion_animation/' + num + '.png';
 
+		nextImage.onload = () => {
+			let ctx = canvas.getContext('2d');
+			ctx.clearRect(0,0,canvas.width,canvas.height);
+			ctx.drawImage(nextImage,0,0,nextImage.width,nextImage.height);
+			window.requestAnimationFrame((timestamp) => this.explosionAnimation(timestamp, num+1, canvas));
+		}
+	}
 
 	/*****
 
@@ -373,7 +241,9 @@ class Game {
 	******/
 	moveUnit(element){
 		
-		if(this.currentUnit == null){
+		let playerUnit = this.state.currentPlayerUnit;
+		
+		if(playerUnit == null){
 			return;
 		}
 		
@@ -381,7 +251,7 @@ class Game {
 			return;
 		}
 		
-		// if square is highlighted or red (#FF1919) (for ranged units like raichu)
+		// if square is highlighted or red (#FF1919) (for ranged units like pancake sniper)
 		if(element.style.border === '1px solid rgb(221, 223, 255)' || element.style.border === '1px solid rgb(255, 25, 25)'){
 			
 			// red squares only indicate attack range, not movement, so don't allow movement there 
@@ -389,10 +259,10 @@ class Game {
 			
 				// for ranged units
 				// clear the red highlight
-				if(this.currentUnit.getAttribute("unitType") === 'range2'){
+				if(playerUnit.getAttribute("unitType") === 'range2'){
 					// we can assume the current unit is a ranged attacker
 					// we can't assume what the range is, so the range ought to be another html attribute 
-					let attackRange = this.getAttackRange(this.currentUnit, 2);
+					let attackRange = getAttackRange(playerUnit, 2);
 
 					for(let path in attackRange){
 						if(attackRange[path]){
@@ -402,18 +272,18 @@ class Game {
 				}
 			
 				// move the unit there 
-				element.style.backgroundImage = this.currentUnit.style.backgroundImage;
-				element.setAttribute("health", this.currentUnit.getAttribute("health"));
-				element.setAttribute("attack", this.currentUnit.getAttribute("attack"));
-				element.setAttribute("unitType", this.currentUnit.getAttribute("unitType"));
+				element.style.backgroundImage = playerUnit.style.backgroundImage;
+				element.setAttribute("health", playerUnit.getAttribute("health"));
+				element.setAttribute("attack", playerUnit.getAttribute("attack"));
+				element.setAttribute("unitType", playerUnit.getAttribute("unitType"));
 				
 				// clear old data for currentUnit
-				this.currentUnit.style.backgroundImage = "";
-				this.currentUnit.setAttribute("unitType", null);
-				this.currentUnit.setAttribute("health", null);
-				this.currentUnit.setAttribute("attack", null)
+				playerUnit.style.backgroundImage = "";
+				playerUnit.setAttribute("unitType", null);
+				playerUnit.setAttribute("health", null);
+				playerUnit.setAttribute("attack", null);
 				
-				let currUnitPaths = getPathsDefault(this.currentUnit);
+				let currUnitPaths = getPathsDefault(playerUnit);
 				for(let key in currUnitPaths){
 					if(currUnitPaths[key]){
 						currUnitPaths[key].style.border = "1px solid #000";
@@ -421,15 +291,16 @@ class Game {
 				}
 			
 				// update player array 
-				for(let i = 0; i < this.playerUnits.length; i++){
-					if(this.playerUnits[i] === this.currentUnit){
-						this.playerUnits[i] = element;
+				for(let i = 0; i < this.state.playerUnits.length; i++){
+					if(this.state.playerUnits[i] === playerUnit){
+						// replace old cell representing this unit with new cell holding the moved unit
+						this.updatePlayerUnitsAtIndex(element, i);
 						break;
 					}
 				}
 				
 				// set currentUnit to new location
-				this.currentUnit = element;
+				this.selectPlayerUnit(element);
 			}
 			
 			// if cell to move in is an enemy unit 
@@ -450,17 +321,17 @@ class Game {
 				
 				// do damage
 				// show some effects when dealing damage
-				let damage = element.getAttribute("health") - this.currentUnit.getAttribute("attack");
+				let damage = element.getAttribute("health") - playerUnit.getAttribute("attack");
 				if(damage <= 0){
 					// remove from enemyUnits array 
-					this.enemyUnits.splice(this.enemyUnits.indexOf(element), 1);
+					this.removeFromEnemyUnits(element);
 				
 					// obliterate enemy 
 					let gridContainer = element.parentNode.parentNode.parentNode.id;
-					if(this.currentUnit.getAttribute("unitType") === 'range2'){
-						$('#' + gridContainer).effect("bounce");
+					if(playerUnit.getAttribute("unitType") === 'range2'){
+						$('#grid').effect("bounce");
 					}else{
-						$('#' + gridContainer).effect("shake");
+						$('#grid').effect("shake");
 					}
 					
 					// remove animation canvas 
@@ -473,30 +344,30 @@ class Game {
 					element.setAttribute("health", null);
 					element.setAttribute("attack", null);
 					element.setAttribute("unitType", null);
+					
 				}else{
-					if(this.currentUnit.getAttribute("unitType") === 'range2'){
+					if(playerUnit.getAttribute("unitType") === 'range2'){
 						$('#grid').effect("bounce");
 					}else{
 						$('#grid').effect("shake");
-					}
-					
+					}	
 					element.setAttribute("health", damage);
 				}
 
-				let currUnitPaths = getPathsDefault(this.currentUnit);
+				let currUnitPaths = getPathsDefault(playerUnit);
 				for(let key in currUnitPaths){
 					if(currUnitPaths[key]){
 						currUnitPaths[key].style.border = "1px solid #000";
 					}
 				}
-				this.currentUnit.setAttribute('pathLight', 0);
+				playerUnit.setAttribute('pathlight', 0);
 						
 				// for ranged units
 				// clear the red highlight
-				if(this.currentUnit.getAttribute("unitType") === 'range2'){
+				if(playerUnit.getAttribute("unitType") === 'range2'){
 					// we can assume the current unit is a ranged attacker
 					// we can't assume what the range is, so the range ought to be another html attribute 
-					let attackRange = this.getAttackRange(this.currentUnit, 2);
+					let attackRange = getAttackRange(playerUnit, 2);
 					//console.log(attackRange);
 					for(let path in attackRange){
 						if(attackRange[path]){
@@ -505,12 +376,190 @@ class Game {
 					}
 				}
 			
-			this.refreshConsole("player attacked!");
+				//this.refreshConsole("player attacked!");
+				this.updateConsole("player attacked!");
 			} // end if enemy 
 		}
 	}
+	
+	/*****
+		enemy's turn 
+		@enemyAI = a function that tells each enemy unit how to move 
+	******/
+	enemyTurn(enemyAI, searchMethod){
+		for(let i = 0; i < this.state.enemyUnits.length; i++){
+			enemyAI(this.state.enemyUnits[i], this.state.enemyUnits, this.state.playerUnits, searchMethod);
+		}
+		alert('enemy ended turn');
+	}
+	
+	addToDeck(card, deck, side){
+		let copy = [...deck];
+		copy.push(card);
+		if(side === 'player'){
+			this.setState({'playerDeck': copy});
+		}else{
+			this.setState({'enemyDeck': copy});
+		}
+	}
+	
+	
+	/***
+		
+		functions to pass to child components
+		
+	***/
+	updateConsole(msg){
+		this.setState((state) => {
+			let copy = [...state.consoleMsgs];
+			copy.push(msg);
+			return {'consoleMsgs': copy};
+		});
+	}
+	
+	clearEnemyUnits(){
+		this.setState({
+			'enemyUnits': []
+		});
+	}
+	
+	clearPlayerUnits(){
+		this.setState({
+			'playerUnits': []
+		});
+	}
+	
+	selectEnemyUnit(unitElement){
+		//console.log(unitElement);
+		this.setState({'currentEnemyUnit': unitElement});
+	}
+	
+	selectPlayerUnit(unitElement){
+		//console.log('player unit selected!');
+		this.setState({'currentPlayerUnit': unitElement});
+	}
+	
+	addToEnemyUnits(unitElement){
+		this.setState((state) => {
+			let copy = [...state.enemyUnits];
+			copy.push(unitElement);
+			return {'enemyUnits': copy};
+		});
+	}
+	
+	addToPlayerUnits(unitElement){
+		this.setState((state) => {
+			let copy = [...state.playerUnits];
+			copy.push(unitElement);
+			return {'playerUnits': copy};
+		});
+	}
+	
+	updatePlayerUnitsAtIndex(unitElement, index){
+		this.setState((state) => {
+			let copy = [...state.playerUnits];
+			copy[index] = unitElement;
+			return {'playerUnits': copy};
+		});
+	}
+	
+	removeFromEnemyUnits(unitElement){
+		this.setState((state) => {
+			let copy = [...state.enemyUnits];
+			copy.splice(copy.indexOf(unitElement), 1);
+			return {'enemyUnits': copy};
+		});
+	}
+	
+	/*** 
+		draw a new hand (pull 3 cards) for the player 
+		@gameInstance = instance of Game object 
+	***/
+	drawCards(){	
+		let deck = this.state.playerDeck;
+		
+		if(deck.size() === 0){
+			return;
+		}
+		
+		// shuffle deck first?
+	
+		let max = this.state.handSize;
+		if(deck.size() <= 2 && deck.size() >= 1){
+			max = deck.length;
+		}
+		
+		// if player already has some cards, the number of cards drawn can't exceed handSize!
+		let cardsDrawn = [...this.state.playerHand]; // making a copy 
+		for(let i = 0; i < max; i++){
+			cardsDrawn.push(deck.remove());
+		}
+		
+		// should have console refresh and cards displayed should also update 
+		this.setState((state) => { 
+			let copy = [...state.consoleMsgs]; 
+			copy.push("player drew " + cardsDrawn.length + " cards!");
+			return {'consoleMsgs': copy, 'playerHand': cardsDrawn}; 
+		});
+		
+	}
+	
+	// end turn for player 
+	// executing this function should have the enemy move 
+	// need to also deactivate any buttons clickable for the player during the enemy's turn 
+	endPlayerTurn(){
+		this.setState({'playerTurn': false}); // this should cause clickable buttons to become unclickable?
+		this.updateConsole('player ended turn!'); 
+		
+		// get the selected search method from dropdown 
+		let selectedMethod = document.getElementById('searchMethod');
+		this.enemyTurn(enemyMovement2, selectedMethod.options[ selectedMethod.selectedIndex ].value);
+		this.endEnemyTurn();
+	}
+	
+	endEnemyTurn(){
+		this.setState({'playerTurn': true});
+	}
+	
+	// game console will rerender if dialogMsgs receives a new message
+	// hand will rerender as cards get used up OR player requests to draw new cards 
+	render(){
+		return(
+			<div>
+				<Header 
+					selectedEnemy={this.state.currentEnemyUnit} 
+					selectedUnit={this.state.currentPlayerUnit} 
+					playerUnits={this.state.playerUnits}
+					enemyUnits={this.state.enemyUnits}
+					playerTurn={this.state.playerTurn}
 
-
+					endPlayerTurn={this.endPlayerTurn} 
+					drawCards={this.drawCards}
+				/>
+				
+				<Grid 
+					width={this.state.width}
+					height={this.state.height}
+				/>
+				
+				<br />
+				
+				<GameConsole 
+					consoleMsgs={this.state.consoleMsgs }
+				/>
+				
+				<br />
+				
+				<CurrentHand 
+					numCardsPerHand={this.state.handSize }
+					cards={this.state.playerHand }
+					updateConsole={this.updateConsole}
+				/>
+			</div>
+		);
+	}
+	
+	
 }
 
 export { Game };
