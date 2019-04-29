@@ -5,7 +5,6 @@ const Header = (props) => {
 	
 	let currPlayerUnit = props.selectedUnit;
 	let currEnemy = props.selectedEnemy;
-	console.log(props.playerTurn);
 	
 	// pass in e.target.style.backgroundImage
 	function getImageSrc(url){

@@ -1,13 +1,13 @@
 import Card  from '../Card.js';
-import { getPathsDefault, selectEnemyOn, selectEnemyOut } from './../Utils.js';
+import { getPathsDefault, selectEnemyOn, selectEnemyOut, getAttackRange } from './../Utils.js';
 
 const BearAttack = new Card(
 "bear attack",
 "./assets/bearattack.png",
-function(gameInstance, name){
+function(gameState, name, gameMethods){
 	
-	let currentUnit = gameInstance.currentUnit;
-	let enemies = gameInstance.enemyUnits;
+	let currentUnit = gameState.currentPlayerUnit;
+	let enemies = gameState.enemyUnits;
 	
 	// MAKE SURE TO CLEAR THE CARD AFTER USING IT! CLEAR CHILD NODES FROM PARENT
 	//console.log(this);
@@ -16,7 +16,7 @@ function(gameInstance, name){
 	// make sure to show damage done and which unit
 	// NEED TO DISABLE MOVEUNIT() EXECUTION WHEN DOING THIS!
 	
-	gameInstance.refreshConsole("Player activated " + name + "!");
+	gameMethods.updateConsole("Player activated " + name + "!");
 
 	// clear the currentUnit in case some unit is selected while trying to implement attack
 	// don't forget possible ranged attack 
@@ -28,7 +28,7 @@ function(gameInstance, name){
 			}
 		}
 		
-		let attackRange = gameInstance.getAttackRange(currentUnit, 2);
+		let attackRange = getAttackRange(currentUnit, 2);
 		for(let path in attackRange){
 			if(attackRange[path]){
 				attackRange[path].style.border = "1px solid #000";
@@ -37,7 +37,7 @@ function(gameInstance, name){
 		
 		// change pathLight so it will highlight when clicked on again 
 		currentUnit.setAttribute("pathLight", 0);
-		gameInstance.currentUnit = null;
+		gameMethods.selectPlayerUnit(null);
 	}
 	
 	document.getElementById('grid').addEventListener('mouseover', selectEnemyOn);
@@ -49,10 +49,11 @@ function(gameInstance, name){
 			// apply damage 
 			$('#grid').effect("shake");
 			
-			let newHealth =  e.target.getAttribute("health") - 10;
+			let newHealth = e.target.getAttribute("health") - 10;
 			
 			if(newHealth <= 0){
-				enemies.splice(enemies.indexOf(e.target), 1);
+				//enemies.splice(enemies.indexOf(e.target), 1);
+				gameMethods.removeFromEnemyUnits(e.target);
 				e.target.style.backgroundImage = "";
 				e.target.setAttribute("health", null);
 				e.target.setAttribute("attack", null);

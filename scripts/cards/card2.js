@@ -4,12 +4,12 @@ import { getPathsDefault, validSpace, leaveSpace } from './../Utils.js';
 const PancakeSniper = new Card(
 "pancake sniper", 
 "./assets/pancakesniper2.png",
-(gameInstance, name) => {
+(gameState, name, gameMethods) => {
 	// place a pancake sniper on the field 
 	// https://stackoverflow.com/questions/4402287/javascript-remove-event-listener
 	
-	let currentUnit = gameInstance.currentUnit;
-	let player = gameInstance.playerUnits;
+	let currentUnit = gameState.currentPlayerUnit;
+	let player = gameState.playerUnits;
 	
 	// after picking this ability, the unit needs to be placed immediately
 	// therefore, if there was a unit selected right before clicking this ability,
@@ -23,7 +23,7 @@ const PancakeSniper = new Card(
 			}
 		}
 		currentUnit.setAttribute('pathLight', 0);
-		gameInstance.currentUnit = null;
+		gameMethods.selectPlayerUnit(null);
 	}
 	
 	// need to disable clicking anything else other than a valid space after this card has been selected 
@@ -41,10 +41,10 @@ const PancakeSniper = new Card(
 			e.target.setAttribute("attack", 70);
 			e.target.setAttribute("unitType", 'range2');
 			e.target.className = "player";
-			player.push(e.target);	// add new unit to player's units array
-			currentUnit = e.target;  // set as current unit 
+			gameMethods.addToPlayerUnits(e.target);	// add new unit to player's units array
+			gameMethods.selectPlayerUnit(e.target);  // set as current unit 
 			
-			gameInstance.refreshConsole("Player placed " + name + "!");
+			gameMethods.updateConsole("Player placed " + name + "!");
 			
 			// remove highlighted border
 			e.target.style.border = "1px solid #000";

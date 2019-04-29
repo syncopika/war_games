@@ -1,4 +1,4 @@
-import { getPathsDefault, getCell } from './Utils.js';
+import { getPathsDefault, getAttackRange, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
 import { GameConsole } from './GameConsole.js';
@@ -29,7 +29,7 @@ class Game extends React.Component{
 			'playerScore': 0,
 			'currentEnemyUnit': null, // for displaying info of the current enemy selected
 			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
-			'playerTurn': true // boolean indicating if player's turn or not
+			'playerTurn': true, // boolean indicating if player's turn or not,
 		}
 		
 		// methods for binding to pass to child components 
@@ -43,6 +43,9 @@ class Game extends React.Component{
 		this.removeFromEnemyUnits = this.removeFromEnemyUnits.bind(this);
 		this.addToEnemyUnits = this.addToEnemyUnits.bind(this);
 		this.addToPlayerUnits = this.addToPlayerUnits.bind(this);
+		this.clearEnemyUnits = this.clearEnemyUnits.bind(this);
+		this.clearPlayerUnits = this.clearPlayerUnits.bind(this);
+		this.removeCardFromHand = this.removeCardFromHand.bind(this);
 	}
 	
 	/*** 
@@ -471,6 +474,24 @@ class Game extends React.Component{
 		});
 	}
 	
+	removeCardFromHand(cardName, side){
+		let newArr = [];
+		let hand;
+		if(side === "player"){
+			hand = "playerHand";
+		}else{
+			hand = "enemyHand";
+		}
+		this.state[hand].forEach((card) => {
+			if(card.name !== cardName){
+				newArr.push(card);
+			}
+		});
+		let newState = {};
+		newState[hand] = newArr;
+		this.setState(newState);
+	}
+	
 	/*** 
 		draw a new hand (pull 3 cards) for the player 
 		@gameInstance = instance of Game object 
@@ -524,6 +545,23 @@ class Game extends React.Component{
 	// game console will rerender if dialogMsgs receives a new message
 	// hand will rerender as cards get used up OR player requests to draw new cards 
 	render(){
+		
+		let gameMethods = {
+			'drawCards': this.drawCards ,
+			'endPlayerTurn': this.endPlayerTurn,
+			'endEnemyTurn': this.endEnemyTurn,
+			'updateConsole': this.updateConsole,
+			'selectEnemyUnit': this.selectEnemyUnit,
+			'selectPlayerUnit': this.selectPlayerUnit,
+			'updatePlayerUnitsAtIndex': this.updatePlayerUnitsAtIndex,
+			'removeFromEnemyUnits': this.removeFromEnemyUnits,
+			'addToEnemyUnits': this.addToEnemyUnits,
+			'addToPlayerUnits': this.addToPlayerUnits,
+			'clearEnemyUnits': this.clearEnemyUnits,
+			'clearPlayerUnits': this.clearPlayerUnits,
+			'removeCardFromHand': this.removeCardFromHand
+		};
+			
 		return(
 			<div>
 				<Header 
@@ -545,15 +583,15 @@ class Game extends React.Component{
 				<br />
 				
 				<GameConsole 
-					consoleMsgs={this.state.consoleMsgs }
+					consoleMsgs={this.state.consoleMsgs}
 				/>
 				
 				<br />
 				
 				<CurrentHand 
-					numCardsPerHand={this.state.handSize }
-					cards={this.state.playerHand }
-					updateConsole={this.updateConsole}
+					numCardsPerHand={this.state.handSize}
+					gameState={this.state}
+					gameMethods={gameMethods}
 				/>
 			</div>
 		);

@@ -5,66 +5,53 @@
 
 
 // to be used as a child component of CurrentHand 
-class CardDisplay extends React.Component{
+let CardDisplay = (props) => {
 
-	constructor(props){
-		super(props);
-		this.state = {
-			'index': this.props.index,
-			'name': this.props.name,
-			'image': this.props.image,
-			'description': this.props.description,
-			'ability': this.props.ability
-		};
-	}
+	let titleStyle = {
+		'fontWeight': 'bold'
+	};
 	
-	render(){
-		
-		let titleStyle = {
-			'fontWeight': 'bold'
-		};
-		
-		let imageStyle = {
-			'width': '200px',
-			'height': '150px',
-			'marginTop': '10px'
-		};
-		
-		let buttonStyle = {
-			'marginTop': '10px'
-		};
-		
-		return(
-			<div className="card">
-				<div style={titleStyle}>
-					{this.state.name}
-				</div>
-				
-				<div>
-					<img src={this.state.image} style={imageStyle} />
-				</div>
-				
-				<div>
-					{this.state.description}
-				</div>
-				
-				<button disabled={true} style={buttonStyle} onClick={this.state.ability}>
-					activate
-				</button>
+	let imageStyle = {
+		'width': '200px',
+		'height': '150px',
+		'marginTop': '10px'
+	};
+	
+	let buttonStyle = {
+		'marginTop': '10px'
+	};
+	
+	return(
+		<div className="card">
+			<div style={titleStyle}>
+				{props.name}
 			</div>
-		);
-		
-		/*
-		return React.createElement('div',
-			{className: "card"},
-			React.createElement('div', {style: titleStyle}, this.state.name),
-			React.createElement('img', {style: imageStyle, src: this.state.image}),
-			React.createElement('div', null, this.state.description),
-			React.createElement('button', {style: buttonStyle, onClick: () => {
-				this.state.ability();
-			}}, 'activate')
-		)*/
-	}
+			
+			<div>
+				<img src={props.image} style={imageStyle} />
+			</div>
+			
+			<div>
+				{props.description}
+			</div>
+			
+			<button style={buttonStyle} onClick={props.ability}>
+				activate
+			</button>
+		</div>
+	);
+	
+	/*
+	return React.createElement('div',
+		{className: "card"},
+		React.createElement('div', {style: titleStyle}, this.state.name),
+		React.createElement('img', {style: imageStyle, src: this.state.image}),
+		React.createElement('div', null, this.state.description),
+		React.createElement('button', {style: buttonStyle, onClick: () => {
+			this.state.ability();
+		}}, 'activate')
+	)*/
+
 
 }
 
@@ -84,7 +71,7 @@ const CurrentHand = (props) => {
 	
 	// on updating arrays in state: https://stackoverflow.com/questions/26253351/correct-modification-of-state-arrays-in-reactjs
 	//render(){
-		let cardDisplays = props.cards.map((card, i) => { 
+		let cardDisplays = props.gameState.playerHand.map((card, i) => { 
 			return React.createElement(CardDisplay, {
 				key: i, // key is special so it can't be accessed from props (will just be 'undefined')
 				index: i,
@@ -92,10 +79,10 @@ const CurrentHand = (props) => {
 				image: card.image, 
 				description: card.description, 
 				ability: () => { 
-					card.ability(null, card.name); 
+					card.ability(props.gameState, card.name, props.gameMethods); 
 					// make it so that after the ability is activated, this hand is immediately notified that the card has been used and should be 
 					// eliminated from view 
-					
+					props.gameMethods.removeCardFromHand(card.name, "player");
 					// use a function passed as a prop to update Game state 
 					//this.setState((state) => { let copy = [...state.cardStates]; copy[i] = false; return {'cardStates': copy} }); 
 				}
