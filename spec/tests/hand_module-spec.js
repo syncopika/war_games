@@ -21,7 +21,7 @@ describe('testing <CurrentHand />', () => {
 		const card3 = new Card('card3','',blank,'');
 		const testDeck = [card1,card2,card3];
 		
-		const wrapper = mount(<CurrentHand numCardsPerHand={3} cards={testDeck} gameInstance={null} />);
+		const wrapper = mount(<CurrentHand gameState={{'playerHand': testDeck}} gameMethods={null} />);
 			
 		expect(wrapper.find(CardDisplay).length).toEqual(3);
 	});

@@ -589,7 +589,6 @@ class Game extends React.Component{
 				<br />
 				
 				<CurrentHand 
-					numCardsPerHand={this.state.handSize}
 					gameState={this.state}
 					gameMethods={gameMethods}
 				/>
