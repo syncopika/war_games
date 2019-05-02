@@ -222,6 +222,94 @@ function dfs(element, elementToFind, enemySet){
 	return pathToFollow.reverse();
 }
 
+// regular bfs search 
+function bfs(element, elementToFind, enemySet){
+	if(element === elementToFind){
+		return [];
+	}
+	if(elementToFind === undefined){
+		return [];
+	}
+	
+	let selfNums = element.id.match(/\d+/g);
+	let selfRow = parseInt(selfNums[0]);
+	let selfCol = parseInt(selfNums[1]);
+	
+	let targetNums = elementToFind.id.match(/\d+/g);
+	let targetRow = parseInt(targetNums[0]);
+	let targetCol = parseInt(targetNums[1]);
+	
+	let rowBoundaryMin = Math.min(targetRow, selfRow);
+	let rowBoundaryMax = Math.max(targetRow, selfRow);
+	
+	if(rowBoundaryMin === rowBoundaryMax){
+		rowBoundaryMin--;
+		rowBoundaryMax++;
+	}
+	
+	let colBoundaryMin = Math.min(targetCol, selfCol);
+	let colBoundaryMax = Math.max(targetCol, selfCol);
+	
+	if(colBoundaryMin === colBoundaryMax){
+		colBoundaryMin--;
+		colBoundaryMax++;
+	}
+	
+	// do bfs 
+	let queue = []; // use a queue 
+	let seen = new Set();
+	let map = {}; // record path to get to elementToFind 
+	map[element.id] = null;
+	
+	while(stack.length > 0){
+		let curr = stack.pop();
+		
+		if(curr === elementToFind){	
+			break;
+		}
+		
+		seen.add(curr);
+		let paths = getPathsDefault(curr);
+		for(let dir in paths){
+			if(paths[dir] === null){
+				continue;
+			}
+			if(paths[dir].className === "obstacle" || enemySet.has(paths[dir])){
+				continue;
+			}
+			if(!seen.has(paths[dir])){
+				let rowCol = paths[dir].id.match(/\d+/g);
+				let row = parseInt(rowCol[0]);
+				let col = parseInt(rowCol[1]);
+				if(row >= rowBoundaryMin && row <= rowBoundaryMax && col <= colBoundaryMax && col >= colBoundaryMin){
+					map[paths[dir].id] = curr.id; // curr is the node that led to paths[dir]
+					stack.push(paths[dir]);
+				}
+			}
+		}
+	}
+	
+	// return path to elementToFind
+	if(!map[elementToFind.id]){
+		return [];
+	}
+	
+	let pathToFollow = [];
+	let node = elementToFind.id;
+	while(node !== null){
+		//console.log(node);
+		pathToFollow.push(node);
+		node = map[node];
+	}
+
+	// pop off the first node since that's the one we're on 
+	pathToFollow.pop();
+	
+	// list of ids!
+	return pathToFollow.reverse();
+}
+
+
 // Manhattan distance 
 function manhattan(sourceX, sourceY, goalX, goalY){
 	let xDiff = Math.abs(sourceX - goalX);
