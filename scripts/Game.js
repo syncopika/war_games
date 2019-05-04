@@ -282,9 +282,9 @@ class Game extends React.Component{
 				
 				// clear old data for currentUnit
 				playerUnit.style.backgroundImage = "";
-				playerUnit.setAttribute("unitType", null);
-				playerUnit.setAttribute("health", null);
-				playerUnit.setAttribute("attack", null);
+				playerUnit.removeAttribute("unitType");
+				playerUnit.removeAttribute("health");
+				playerUnit.removeAttribute("attack");
 				
 				let currUnitPaths = getPathsDefault(playerUnit);
 				for(let key in currUnitPaths){
@@ -344,9 +344,9 @@ class Game extends React.Component{
 					
 					element.classList.remove("enemy");
 					element.style.backgroundImage = "";
-					element.setAttribute("health", null);
-					element.setAttribute("attack", null);
-					element.setAttribute("unitType", null);
+					element.removeAttribute("health");
+					element.removeAttribute("attack");
+					element.removeAttribute("unitType");
 					
 				}else{
 					if(playerUnit.getAttribute("unitType") === 'range2'){
@@ -391,7 +391,7 @@ class Game extends React.Component{
 	******/
 	enemyTurn(enemyAI, searchMethod){
 		for(let i = 0; i < this.state.enemyUnits.length; i++){
-			enemyAI(this.state.enemyUnits[i], this.state.enemyUnits, this.state.playerUnits, searchMethod);
+			enemyAI(this.state.enemyUnits[i], this.state, this.selectEnemyUnit, searchMethod);
 		}
 		alert('enemy ended turn');
 	}

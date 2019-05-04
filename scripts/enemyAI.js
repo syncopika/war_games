@@ -429,10 +429,18 @@ function aStar(element, elementToFind, enemySet){
 }
 
 
-// another kind of enemy movement - not very fast or precise
+// another kind of enemy movement
 // https://www.redblobgames.com/pathfinding/grids/algorithms.html
 // https://stackoverflow.com/questions/12864004/tracing-and-returning-a-path-in-depth-first-search
-function enemyMovement2(enemyElement, enemyUnits, playerUnits, searchMethod){
+// @enemyElement - an element holding an enemy unit (a DOM element) 
+// @gameState - the game's state (an object)
+// @selectEnemyUnit - a function to set the currently selected enemy unit to display in the header 
+// @searchMethod - a function representing the pathfinding algorithm, i.e. dfs, A* 
+function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
+	
+	let enemyUnits = gameState.enemyUnits;
+	let playerUnits = gameState.playerUnits;
+	let currEnemyUnit = gameState.currentEnemyUnit;
 	
 	// if enemy is adjacent, attack 
 	let paths = getPathsDefault(enemyElement);
@@ -528,6 +536,14 @@ function enemyMovement2(enemyElement, enemyUnits, playerUnits, searchMethod){
 	
 	enemyElement.classList.remove("enemy");
 	enemyElement.style.backgroundImage = "";
+	enemyElement.removeAttribute("health");
+	enemyElement.removeAttribute("attack");
+	
+	// if the player had selected an enemy unit to view, and that unit moves over to a new cell,
+	// make sure that's updated
+	if(currEnemyUnit !== null && currEnemyUnit.id === enemyElement.id){
+		selectEnemyUnit(newCell);
+	}
 }
 
 // show the path from a unit to the target 

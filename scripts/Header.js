@@ -21,13 +21,13 @@ const Header = (props) => {
 				{
 					(currEnemy === null) ? 
 					(<img id='selectedEnemy' width='90px' height='120px' />) :
-					(<img id='selectedEnemy' src={getImageSrc(currEnemy.style.backgroundImage)} width='90px' height='120px' />)
+					(<img id='selectedEnemy' src={currEnemy.style.backgroundImage ? getImageSrc(currEnemy.style.backgroundImage) : ""} width='90px' height='120px' />)
 				}
 				</span>
 				<h3> enemy health: { 
 					(currEnemy === null) ?
 					<span id='enemyHealth'></span> :
-					<span id='enemyHealth'> {currEnemy.getAttribute('health')} </span>
+					<span id='enemyHealth'> { currEnemy.getAttribute('health') ? currEnemy.getAttribute('health') : ""} </span>
 				} 
 				</h3>
 				<br />
