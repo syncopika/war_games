@@ -6,7 +6,6 @@ import { Header } from './Header.js';
 import { Grid } from './Grid.js';
 import { enemyMovement, enemyMovement2 } from "./enemyAI.js";
 
-
 import { CompleteDomination } from "./cards/card1.js";
 import { PancakeSniper } from "./cards/card2.js";
 import { BearAttack } from "./cards/card3.js";
@@ -27,10 +26,11 @@ class Game extends React.Component{
 			'consoleMsgs': [],
 			'enemyScore': 0,
 			'playerScore': 0,
+			'playerMoves': 1,
 			'currentEnemyUnit': null, // for displaying info of the current enemy selected
 			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
 			'playerTurn': true, // boolean indicating if player's turn or not,
-		}
+		};
 		
 		// methods for binding to pass to child components 
 		this.drawCards = this.drawCards.bind(this);
@@ -46,6 +46,7 @@ class Game extends React.Component{
 		this.clearEnemyUnits = this.clearEnemyUnits.bind(this);
 		this.clearPlayerUnits = this.clearPlayerUnits.bind(this);
 		this.removeCardFromHand = this.removeCardFromHand.bind(this);
+		this.setPlayerMoves = this.setPlayerMoves.bind(this);
 	}
 	
 	/*** 
@@ -241,6 +242,9 @@ class Game extends React.Component{
 
 		@element - the DOM element you want to move to 
 		
+		side effects:
+			- playerMoves should be decremented by 1 if player moves or attacks 
+		
 	******/
 	moveUnit(element){
 		
@@ -251,6 +255,11 @@ class Game extends React.Component{
 		}
 		
 		if(element.className === "obstacle"){
+			return;
+		}
+		
+		if(this.state.playerMoves === 0){
+			this.updateConsole("no more moves left!");
 			return;
 		}
 		
@@ -304,6 +313,9 @@ class Game extends React.Component{
 				
 				// set currentUnit to new location
 				this.selectPlayerUnit(element);
+				
+				// update playerMoves 
+				this.setPlayerMoves(this.state.playerMoves - 1);
 			}
 			
 			// if cell to move in is an enemy unit 
@@ -378,8 +390,9 @@ class Game extends React.Component{
 						}
 					}
 				}
-			
-				//this.refreshConsole("player attacked!");
+				// update playerMoves 
+				this.setPlayerMoves(this.state.playerMoves - 1);
+				
 				this.updateConsole("player attacked!");
 			} // end if enemy 
 		}
@@ -387,15 +400,24 @@ class Game extends React.Component{
 	
 	/*****
 		enemy's turn 
-		@enemyAI = a function that tells each enemy unit how to move 
+		@enemyAI = a function that tells each enemy unit how to move
+		@searchMethod = function that returns an array of grid cell ids representing the path to reach a player's unit		
 	******/
 	enemyTurn(enemyAI, searchMethod){
+		let promiseList = []
 		for(let i = 0; i < this.state.enemyUnits.length; i++){
-			enemyAI(this.state.enemyUnits[i], this.state, this.selectEnemyUnit, searchMethod);
+			// enemyAI function should return a promise 
+			promiseList.push(enemyAI(this.state.enemyUnits[i], this.state, this.selectEnemyUnit, searchMethod));
 		}
-		alert('enemy ended turn');
+		Promise.all(promiseList).then((results) => {
+			alert('enemy ended turn');
+			this.endEnemyTurn();
+			// reset player's moves 
+			this.setPlayerMoves(this.state.playerUnits.length + this.state.playerHand.length);
+		});
 	}
 	
+	/*
 	addToDeck(card, deck, side){
 		let copy = [...deck];
 		copy.push(card);
@@ -404,8 +426,7 @@ class Game extends React.Component{
 		}else{
 			this.setState({'enemyDeck': copy});
 		}
-	}
-	
+	}*/
 	
 	/***
 		
@@ -433,12 +454,10 @@ class Game extends React.Component{
 	}
 	
 	selectEnemyUnit(unitElement){
-		//console.log(unitElement);
 		this.setState({'currentEnemyUnit': unitElement});
 	}
 	
 	selectPlayerUnit(unitElement){
-		//console.log('player unit selected!');
 		this.setState({'currentPlayerUnit': unitElement});
 	}
 	
@@ -448,6 +467,10 @@ class Game extends React.Component{
 			copy.push(unitElement);
 			return {'enemyUnits': copy};
 		});
+	}
+	
+	setPlayerMoves(newValue){
+		this.setState({'playerMoves': newValue});
 	}
 	
 	addToPlayerUnits(unitElement){
@@ -475,10 +498,14 @@ class Game extends React.Component{
 	}
 	
 	removeCardFromHand(cardName, side){
+		let newState = {};
 		let newArr = [];
 		let hand;
 		if(side === "player"){
 			hand = "playerHand";
+			
+			// since this card has been used, decrement the player's number of moves 
+			newState['playerMoves'] = this.state['playerMoves'] - 1;
 		}else{
 			hand = "enemyHand";
 		}
@@ -487,14 +514,14 @@ class Game extends React.Component{
 				newArr.push(card);
 			}
 		});
-		let newState = {};
 		newState[hand] = newArr;
 		this.setState(newState);
 	}
 	
-	/*** 
-		draw a new hand (pull 3 cards) for the player 
-		@gameInstance = instance of Game object 
+	/***
+	
+		draw new cards (up to the given hand size)
+		
 	***/
 	drawCards(){	
 		let deck = this.state.playerDeck;
@@ -504,13 +531,13 @@ class Game extends React.Component{
 		}
 		
 		// shuffle deck first?
-	
 		let max = this.state.handSize;
 		if(deck.size() <= 2 && deck.size() >= 1){
 			max = deck.length;
 		}
 		
 		// if player already has some cards, the number of cards drawn can't exceed handSize!
+		// also increment player's number of moves 
 		let cardsDrawn = [...this.state.playerHand]; // making a copy 
 		for(let i = 0; i < max; i++){
 			cardsDrawn.push(deck.remove());
@@ -520,9 +547,10 @@ class Game extends React.Component{
 		this.setState((state) => { 
 			let copy = [...state.consoleMsgs]; 
 			copy.push("player drew " + cardsDrawn.length + " cards!");
-			return {'consoleMsgs': copy, 'playerHand': cardsDrawn}; 
+			
+			// subtract 1 because drawing cards itself costs a move 
+			return {'consoleMsgs': copy, 'playerHand': cardsDrawn, 'playerMoves': this.state.playerMoves + cardsDrawn.length - 1}; 
 		});
-		
 	}
 	
 	// end turn for player 
@@ -535,7 +563,6 @@ class Game extends React.Component{
 		// get the selected search method from dropdown 
 		let selectedMethod = document.getElementById('searchMethod');
 		this.enemyTurn(enemyMovement2, selectedMethod.options[ selectedMethod.selectedIndex ].value);
-		this.endEnemyTurn();
 	}
 	
 	endEnemyTurn(){
@@ -559,7 +586,8 @@ class Game extends React.Component{
 			'addToPlayerUnits': this.addToPlayerUnits,
 			'clearEnemyUnits': this.clearEnemyUnits,
 			'clearPlayerUnits': this.clearPlayerUnits,
-			'removeCardFromHand': this.removeCardFromHand
+			'removeCardFromHand': this.removeCardFromHand,
+			'setPlayerMoves': this.setPlayerMoves
 		};
 			
 		return(
@@ -570,7 +598,7 @@ class Game extends React.Component{
 					playerUnits={this.state.playerUnits}
 					enemyUnits={this.state.enemyUnits}
 					playerTurn={this.state.playerTurn}
-
+					playerMoves={this.state.playerMoves}
 					endPlayerTurn={this.endPlayerTurn} 
 					drawCards={this.drawCards}
 				/>

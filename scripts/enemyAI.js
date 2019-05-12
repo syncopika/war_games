@@ -354,8 +354,6 @@ function aStar(element, elementToFind, enemySet){
 				currSmallestF = val;
 			}
 		});
-		//console.log(currSmallestF);
-		//console.log("---------");
 		
 		// remove smallestF from open, add to closed 
 		open.delete(smallestF);
@@ -435,7 +433,7 @@ function aStar(element, elementToFind, enemySet){
 // @enemyElement - an element holding an enemy unit (a DOM element) 
 // @gameState - the game's state (an object)
 // @selectEnemyUnit - a function to set the currently selected enemy unit to display in the header 
-// @searchMethod - a function representing the pathfinding algorithm, i.e. dfs, A* 
+// @searchMethod - a function representing the pathfinding algorithm, i.e. dfs, A* - returns a list of grid cell ids representing the path 
 function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
 	
 	let enemyUnits = gameState.enemyUnits;
@@ -468,16 +466,12 @@ function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
 				opponent.removeAttribute('unittype');
 				opponent.classList.remove('player');
 				// remove from player array
-				playerUnits.splice(playerUnits.indexOf(opponent), 1);
+				// NEED TO REMOVE FROM PLAYER'S UNITS ARRAY 
+				//playerUnits.splice(playerUnits.indexOf(opponent), 1);
 			}else{
 				// otherwise decrement health 
 				opponent.style.border = "1px solid #FF1919"; // red border to indicate damage
 				opponent.setAttribute('health', opponentHealth - enemyElement.getAttribute('attack'));
-				
-				// only show current health for cat boss for now 
-				if(paths[path].style.backgroundImage.match(/(nyasu7)/g)){
-					document.getElementById('playerHealth').textContent = "" + opponentHealth - enemyElement.getAttribute('attack');
-				}
 				
 				// do some animation to indicate attack 
 				setTimeout(function(){ $('#grid').effect("shake") }, 200);
@@ -517,7 +511,10 @@ function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
 	// checking out paths generated...probably should slow it down a bit...
 	let prevPathElement = path[0];
 	document.getElementById(prevPathElement).style.backgroundColor = color; //'#53cc2a';
-	window.requestAnimationFrame((timestamp)=>{highlightPath(timestamp, prevPathElement, 0, path, color)});
+	
+	let promise = new Promise((resolve, reject) => {
+		window.requestAnimationFrame((timestamp)=>{highlightPath(timestamp, prevPathElement, 0, path, color, resolve)});
+	});
 
 	
 	// go to the first element from the path 
@@ -544,17 +541,18 @@ function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
 	if(currEnemyUnit !== null && currEnemyUnit.id === enemyElement.id){
 		selectEnemyUnit(newCell);
 	}
+	
+	return promise;
 }
 
 // show the path from a unit to the target 
-function highlightPath(timestamp, lastElement, index, path, color){
+function highlightPath(timestamp, lastElement, index, path, color, resolve){
 	document.getElementById(lastElement).style.backgroundColor = "";
 	if(index === path.length){
-		return;
+		return resolve("success!");
 	}
 	document.getElementById(path[index]).style.backgroundColor = color;//'#53cc2a'; #f794ed
-	
-	setTimeout(() => window.requestAnimationFrame((timestamp) => highlightPath(timestamp, path[index], index+1, path, color)), 50);
+	setTimeout(() => window.requestAnimationFrame((timestamp) => highlightPath(timestamp, path[index], index+1, path, color, resolve)), 50);
 }
 
 export { enemyMovement, enemyMovement2, dfs, aStar };

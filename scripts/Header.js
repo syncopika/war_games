@@ -62,9 +62,10 @@ const Header = (props) => {
 					<span id='playerHealth'> {currPlayerUnit.getAttribute('health')} </span>
 				}
 				</h3>
-				<button disabled={!props.playerTurn} id='drawCards' onClick={props.drawCards}> draw cards </button>
+				<button disabled={!props.playerTurn || props.playerMoves === 0} id='drawCards' onClick={props.drawCards}> draw cards </button>
 				<button disabled={!props.playerTurn} id='endTurn' onClick={props.endPlayerTurn}> end turn </button>
 				<p> player unit count: <span> {props.playerUnits.length} </span></p>
+				<p> player moves remaining: <span> {props.playerMoves} </span></p>
 			</div>
 		</div>
 	);
