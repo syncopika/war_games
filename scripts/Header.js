@@ -20,7 +20,7 @@ const Header = (props) => {
 				<span>
 				{
 					(currEnemy === null) ? 
-					(<img id='selectedEnemy' width='90px' height='120px' />) :
+					(<img id='selectedEnemy' width='90px' height='120px' src='../assets/blank.png' />) :
 					(<img id='selectedEnemy' src={currEnemy.style.backgroundImage ? getImageSrc(currEnemy.style.backgroundImage) : ""} width='90px' height='120px' />)
 				}
 				</span>
@@ -30,6 +30,7 @@ const Header = (props) => {
 					<span id='enemyHealth'> { currEnemy.getAttribute('health') ? currEnemy.getAttribute('health') : ""} </span>
 				} 
 				</h3>
+				<br />
 				<br />
 				<p> enemy unit count: <span> {props.enemyUnits.length} </span></p>
 			</div>
@@ -47,12 +48,12 @@ const Header = (props) => {
 				<p> yeah, I know the art is bad... lol </p>
 			</div>
 			
-			<div id='playerOptions'>
+			<div id='playerInfo'>
 				<h3> player info </h3>
 				<span>
 				{
 					(currPlayerUnit === null) ? 
-					(<img id='player' width='90px' height='120px' />) :
+					(<img id='player' width='90px' height='120px' src='../assets/blank.png' />) :
 					(<img id='player' src={getImageSrc(currPlayerUnit.style.backgroundImage)} width='90px' height='120px' />)
 				}
 				</span> 

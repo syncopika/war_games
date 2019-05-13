@@ -10,10 +10,10 @@ body, html{
 	text-align: center;
 		margin-bottom: 10px;
 }
-#enemyInfo, #playerOptions{
+#enemyInfo, #playerInfo{
 	display: inline-block;
 }
-#playerOptions{
+#playerInfo{
 	margin-left: 50px;
 }
 #grid{
