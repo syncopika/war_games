@@ -33,7 +33,7 @@ const PancakeSniper = new Card(
 	
 		let col = parseInt( e.target.id.match(/\d+/g)[1] );
 		
-		if(col > 32 && e.target.style.backgroundImage === ""){
+		if(col > gameState.width - 3 && e.target.style.backgroundImage === ""){
 		
 			// place the unit 
 			e.target.style.backgroundImage = "url('" + "./assets//pancakesniper2.png" + "')";

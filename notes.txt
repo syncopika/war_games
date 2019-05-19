@@ -30,4 +30,6 @@ this.
 
 rotate units properly when they move in a certain direction. 
 
+try to redefine functions in utils.js without hardcoding numbers. 
+
 add 3d ships and integrate webgl!
