@@ -20,8 +20,8 @@ const Header = (props) => {
 				<span>
 				{
 					(currEnemy === null) ? 
-					(<img id='selectedEnemy' width='90px' height='120px' src='../assets/blank.png' />) :
-					(<img id='selectedEnemy' src={currEnemy.style.backgroundImage ? getImageSrc(currEnemy.style.backgroundImage) : ""} width='90px' height='120px' />)
+					(<img id='selectedEnemy' width='200px' height='80px' src='./assets/blank.png' />) :
+					(<img id='selectedEnemy' src={currEnemy.style.backgroundImage ? getImageSrc(currEnemy.style.backgroundImage) : ""} width='200px' height='80px' />)
 				}
 				</span>
 				<h3> enemy health: { 
@@ -32,20 +32,21 @@ const Header = (props) => {
 				</h3>
 				<br />
 				<br />
-				<p> enemy unit count: <span> {props.enemyUnits.length} </span></p>
+				<p> enemies remaining: <span> {props.enemyUnits.length} </span></p>
 			</div>
 			
 			<div id='title'>
 				<h3> 2d turn-based game idea </h3>
-				<p> click on the cat on the grid to move. </p>
+				<p> click on the light grey battleship on the grid to move. </p>
 				<p> click on an adjacent enemy unit to do damage, or on any enemy unit to get info. </p> 
 				<p> click on 'draw cards' to get some new abilities. </p>
 				<p>'end turn' causes the enemies to move and possibly do damage to you. </p>
 				<select id="searchMethod">
 					<option value="depth-first search" selected>depth-first search</option>
+					<option value="breadth-first search">breadth-first search</option>
 					<option value="A*">A*</option>
 				</select>
-				<p> yeah, I know the art is bad... lol </p>
+				<p> sorry about the bad art lol </p>
 			</div>
 			
 			<div id='playerInfo'>
@@ -53,8 +54,8 @@ const Header = (props) => {
 				<span>
 				{
 					(currPlayerUnit === null) ? 
-					(<img id='player' width='90px' height='120px' src='../assets/blank.png' />) :
-					(<img id='player' src={getImageSrc(currPlayerUnit.style.backgroundImage)} width='90px' height='120px' />)
+					(<img id='player' width='200px' height='80px' src='./assets/blank.png' />) :
+					(<img id='player' src={getImageSrc(currPlayerUnit.style.backgroundImage)} width='200px' height='80px' />)
 				}
 				</span> 
 				<h3> player health: {

@@ -14,7 +14,7 @@ class Game extends React.Component{
 	constructor(props){
 		super(props);
 		this.state = {
-			'width': 36,
+			'width': 28,
 			'height': 15,
 			'playerUnits': [],
 			'enemyUnits': [],
@@ -75,15 +75,15 @@ class Game extends React.Component{
 		}
 		
 		// populate map 
-		self.placeRandom("./assets/catadmiral.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+		self.placeRandom("./assets/battleship.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 		
 		// place enemies 
 		for(let i = 0; i < 10; i++){
-			self.placeRandom("./assets/gasmask.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
+			self.placeRandom("./assets/battleship2.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 		}
 		
 		// place enemy boss
-		self.placeRandom("./assets/enemyboss1.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
+		self.placeRandom("./assets/battleship3.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 		
 		// place obstacles
 		for(let i = 0; i < 17; i++){
@@ -328,7 +328,7 @@ class Game extends React.Component{
 				animationCanvas.height = parseInt(element.style.height);
 				animationCanvas.style.zIndex = 1;
 				let canvasCtx = animationCanvas.getContext('2d');
-				canvasCtx.fillStyle = "rgba(0,0,0,255)";
+				canvasCtx.fillStyle = "rgba(0,0,0,0)";
 				canvasCtx.fillRect(0, 0, animationCanvas.width, animationCanvas.height);
 				element.appendChild(animationCanvas);
 		

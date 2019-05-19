@@ -222,7 +222,7 @@ function dfs(element, elementToFind, enemySet){
 	return pathToFollow.reverse();
 }
 
-// regular bfs search 
+// regular bfs search (use shift and unshift instead of pop and push to act like a queue)
 function bfs(element, elementToFind, enemySet){
 	if(element === elementToFind){
 		return [];
@@ -256,13 +256,13 @@ function bfs(element, elementToFind, enemySet){
 	}
 	
 	// do bfs 
-	let queue = []; // use a queue 
+	let queue = [element];
 	let seen = new Set();
 	let map = {}; // record path to get to elementToFind 
 	map[element.id] = null;
 	
-	while(stack.length > 0){
-		let curr = stack.pop();
+	while(queue.length > 0){
+		let curr = queue.shift();
 		
 		if(curr === elementToFind){	
 			break;
@@ -283,7 +283,7 @@ function bfs(element, elementToFind, enemySet){
 				let col = parseInt(rowCol[1]);
 				if(row >= rowBoundaryMin && row <= rowBoundaryMax && col <= colBoundaryMax && col >= colBoundaryMin){
 					map[paths[dir].id] = curr.id; // curr is the node that led to paths[dir]
-					stack.push(paths[dir]);
+					queue.unshift(paths[dir]);
 				}
 			}
 		}
@@ -498,6 +498,9 @@ function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
 	if(searchMethod === "A*"){
 		path = aStar(enemyElement, unitToFind, enemies); //dfs(enemyElement, unitToFind, enemies);
 		color = '#53cc2a';
+	}else if(searchMethod === "breadth-first search"){
+		path = bfs(enemyElement, unitToFind, enemies);
+		color = '#f00fff';
 	}else{
 		path = dfs(enemyElement, unitToFind, enemies);
 		color = '#f794ed';
@@ -531,6 +534,21 @@ function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
 		}
 	}
 	
+	// rotate the unit depending on direction 
+	// need to know current direction facing though
+	let oldCoords = enemyElement.id.match(/\d+/g);
+	let newCoords = newCell.id.match(/\d+/g);
+	
+	// if going up 
+	if(oldCoords[0] > newCoords[0]){
+	}else if(oldCoords[0] < newCoords[0]){
+		// going down 
+	}else if(oldCoords[1] < newCoords[1]){
+		// going right 
+	}else{
+		// going left 
+	}
+	
 	enemyElement.classList.remove("enemy");
 	enemyElement.style.backgroundImage = "";
 	enemyElement.removeAttribute("health");
@@ -555,4 +573,4 @@ function highlightPath(timestamp, lastElement, index, path, color, resolve){
 	setTimeout(() => window.requestAnimationFrame((timestamp) => highlightPath(timestamp, path[index], index+1, path, color, resolve)), 50);
 }
 
-export { enemyMovement, enemyMovement2, dfs, aStar };
+export { enemyMovement, enemyMovement2, dfs, bfs, aStar };

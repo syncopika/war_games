@@ -17,3 +17,17 @@ as if you have React components and use JSX, Babel is needed. unfortunately, you
 Since we are bundling the Javascript, the old Javascript to initiate the game originally in 
 index.html can now be moved to the entry point of the bundle. Note that we use jQuery to wait 
 until the page has loaded before running the bundle!
+
+===========================================
+
+To do:
+
+write tests confirming basic things, like if an enemy gets obliterated does the enemy units array change appropriately?
+i.e. check count, contents 
+
+when a player unit gets defeated, make sure it gets removed from the player units array! I don't think it currently does
+this. 
+
+rotate units properly when they move in a certain direction. 
+
+add 3d ships and integrate webgl!
