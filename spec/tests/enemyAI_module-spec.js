@@ -24,7 +24,6 @@ describe("check functions from enemyAI.js", () => {
 	let wrapper;
 	
 	beforeAll(() => {
-		
 		// create a mock of the DOM, add the grid. then select a cell of the grid and check paths
 		jsdom = new JSDOM("<!doctype html><html><body><div></div></body></html>");
 		document = jsdom.window.document;
@@ -69,6 +68,8 @@ describe("check functions from enemyAI.js", () => {
 		//expect(document.getElementsByTagName('table')[0]).not.toBeNull();
 		
 		let table = document.getElementsByTagName('table')[0].childNodes[0]; // this is a <tbody> element 
+		
+		// placing obstacles at (0,3), (1,0), (1,1), (1,3)
 		let obstacles = {
 			0: [3],
 			1: [0,1,3]

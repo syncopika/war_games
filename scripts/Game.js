@@ -14,13 +14,13 @@ class Game extends React.Component{
 	constructor(props){
 		super(props);
 		this.state = {
-			'width': 28,
-			'height': 15,
+			'width': this.props.gridWidth, //28,
+			'height': this.props.gridHeight, //15,
 			'playerUnits': [],
 			'enemyUnits': [],
 			'playerDeck': new Deck([PancakeSniper, CompleteDomination, BearAttack]),
 			'enemyDeck': new Deck(),
-			'handSize': this.props.handSize, //4; // how many cards a hand can have at a time 
+			'handSize': this.props.handSize, //4, // how many cards a hand can have at a time 
 			'playerHand': [],   // the cards the player currently holds
 			'enemyHand': [],  // the cards the opponent currently holds
 			'consoleMsgs': [],

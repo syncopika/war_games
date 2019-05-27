@@ -1,11 +1,13 @@
 import { Deck } from '../../scripts/Deck.js';
 
 describe('test Deck class for correctness', () => {
+	
 	it('should have an empty deck initially', () => {
 		const deck = new Deck();
 		expect(deck.theDeck.length).toBe(0);
 		expect(deck.size()).toBe(0);
 	});
+	
 	it('check add, size and remove', () => {
 		const deck = new Deck();
 		deck.add(1);

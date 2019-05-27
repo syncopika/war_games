@@ -3,7 +3,7 @@ import { getPathsDefault, validSpace, leaveSpace } from './../Utils.js';
 
 const PancakeSniper = new Card(
 "pancake sniper", 
-"./assets/pancakesniper2.png",
+"./assets/pancakesniperboat.png",
 (gameState, name, gameMethods) => {
 	// place a pancake sniper on the field 
 	// https://stackoverflow.com/questions/4402287/javascript-remove-event-listener
@@ -36,7 +36,7 @@ const PancakeSniper = new Card(
 		if(col > gameState.width - 3 && e.target.style.backgroundImage === ""){
 		
 			// place the unit 
-			e.target.style.backgroundImage = "url('" + "./assets//pancakesniper2.png" + "')";
+			e.target.style.backgroundImage = "url('" + "./assets/pancakesniperboat.png" + "')";
 			e.target.setAttribute("health", 120);
 			e.target.setAttribute("attack", 70);
 			e.target.setAttribute("unitType", 'range2');

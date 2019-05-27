@@ -1,27 +1,22 @@
 import { JSDOM } from "jsdom";
 import * as Utils from "../../scripts/Utils.js";
+import { shallow, mount } from 'enzyme';
 import { Game } from "../../scripts/Game.js";
 
 // when testing make sure to uncomment import react statements in the script files used 
 describe("check functions from Utils.js", () => {
-	
-	let gameInstance;
+		
 	let jsdom;
-	let document;
+	let wrapper;
 	
-	beforeEach(() => {
-		gameInstance = new Game();
-		
+	beforeAll(() => {
 		// create a mock of the DOM, add the grid. then select a cell of the grid and check paths
-		jsdom = new JSDOM("<!doctype html><html><body><div></div><div></div></body></html>");
+		jsdom = new JSDOM("<!doctype html><html><body><div></div></body></html>");
 		document = jsdom.window.document;
-
-		let dummyNode = document.getElementsByTagName('div')[0];
-		dummyNode.id = "tableParent";
 		
-		let width = 36;
-		let height = 15;
-		gameInstance.createGrid(width, height, dummyNode);
+		let w = 36;
+		let h = 15;
+		wrapper = mount(<Game gridWidth={w} gridHeight={h} />, {attachTo: document.body});
 	});
 	
 	it("test getPathsDefault", () => {
@@ -38,12 +33,11 @@ describe("check functions from Utils.js", () => {
 		expect(paths.right).not.toBe(null);
 		
 		// select a center element (top, left, bottom and right should be non-null)
-		
 	});
 	
 	it("test valid space", () => {
-		// a valid space (from the player's perspective) is a space that is in a column > 32 
-		let row = document.getElementsByTagName('table')[0].childNodes[0];
+		// a valid space (from the player's perspective) is a space that is in a column > 33
+		let row = document.getElementsByTagName('table')[0].childNodes[0].childNodes[0]; // a row is a child node of a tbody
 		let aValidSpace = row.childNodes[34];
 		let invalidSpace = row.childNodes[2];
 		
