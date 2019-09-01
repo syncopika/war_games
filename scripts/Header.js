@@ -46,7 +46,6 @@ const Header = (props) => {
 					<option value="breadth-first search">breadth-first search</option>
 					<option value="A*">A*</option>
 				</select>
-				<p> sorry about the bad art lol </p>
 			</div>
 			
 			<div id='playerInfo'>

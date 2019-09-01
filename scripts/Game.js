@@ -1,4 +1,4 @@
-import { getPathsDefault, getAttackRange, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut } from './Utils.js';
+import { getPathsDefault, getAttackRange, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut, convert2dCoordsTo3d } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
 import { GameConsole } from './GameConsole.js';
@@ -9,6 +9,9 @@ import { enemyMovement, enemyMovement2 } from "./enemyAI.js";
 import { CompleteDomination } from "./cards/card1.js";
 import { PancakeSniper } from "./cards/card2.js";
 import { BearAttack } from "./cards/card3.js";
+
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 class Game extends React.Component{
 	constructor(props){
@@ -66,8 +69,9 @@ class Game extends React.Component{
 		});
 		
 		// bind click event to highlight paths
-		for(let i = 0; i < height; i++){
-			for(let j = 0; j < width; j++){
+		//console.log(document);
+		for(let i = 0; i < Math.floor(height / 60); i++){
+			for(let j = 0; j < Math.floor(width / 52); j++){
 				let cell = document.getElementById('row' + i + 'column' + j);
 				cell.addEventListener('click', () => { self.activeObject(cell, self.state.playerUnits); });
 				cell.addEventListener('click', () => { self.moveUnit(cell); });
@@ -75,20 +79,139 @@ class Game extends React.Component{
 		}
 		
 		// populate map 
-		self.placeRandom("./assets/battleship.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+		//self.placeRandom("./assets/battleship.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 		
 		// place enemies 
 		for(let i = 0; i < 10; i++){
-			self.placeRandom("./assets/battleship2.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
+			//self.placeRandom("./assets/battleship2.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 		}
 		
 		// place enemy boss
-		self.placeRandom("./assets/battleship3.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
+		//self.placeRandom("./assets/battleship3.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 		
 		// place obstacles
 		for(let i = 0; i < 17; i++){
-			self.placeObstacles(0, width, 0, height);
+			//self.placeObstacles(0, width, 0, height);
 		}
+		
+		const WIDTH = 1400;
+		const HEIGHT = 600;
+		const VIEW_ANGLE = 100;
+		const ASPECT = WIDTH / HEIGHT;
+		const NEAR = 1;
+		const FAR = 1000;
+		
+		const container = document.querySelector('#container');
+		
+		const renderer = new THREE.WebGLRenderer();
+		
+		const LEFT = WIDTH / -10;
+		const RIGHT = WIDTH / 10;
+		const TOP = HEIGHT / 10;
+		const BOTTOM = HEIGHT / -10;
+
+		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);
+		const scene = new THREE.Scene();
+		scene.background = new THREE.Color( 0xffffff );
+		
+		scene.add(camera);
+		renderer.setSize(WIDTH, HEIGHT);	
+		container.appendChild(renderer.domElement);
+		renderer.render(scene, camera);
+		
+		let spotLight = new THREE.SpotLight( 0xffffff );
+		spotLight.position.set( 0, 0, 1 );
+		spotLight.castShadow = true;
+		spotLight.shadow.mapSize.width = 2000;
+		spotLight.shadow.mapSize.height = 2000;
+		spotLight.shadow.camera.near = 500;
+		spotLight.shadow.camera.far = 4000;
+		spotLight.shadow.camera.fov = 30;
+		scene.add(spotLight);
+			
+		let loader = new GLTFLoader();
+		let obj;
+		// Load a glTF resource
+		loader.load(
+			// resource URL
+			'../assets/battleship-edit.glb',
+			// called when the resource is loaded
+			function (gltf) {
+
+				//scene.add( gltf.scene );
+				gltf.scene.traverse((child) => {
+					if(child.type === "Mesh"){
+						console.log(child);
+						let material = child.material;
+						let geometry = child.geometry;
+						obj = new THREE.Mesh(geometry, material);
+						
+						let gridCell = document.querySelector("#row4column19"); // note that there are multiple column18 ! :|
+						let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);
+						//lastGridCell = gridCell;
+						//lastGridCell.setAttribute("unit", "battleship1");
+						
+						obj.position.set(v.x, v.y, -450);
+						obj.scale.x = child.scale.x * 20;
+						obj.scale.y = child.scale.y * 20;
+						obj.scale.z = child.scale.z * 20;
+						obj.rotateOnAxis(new THREE.Vector3(0,1,0), Math.PI / 2); // note this on object's local axis! so when you rotate, the axes change (i.e. x becomes z)
+						obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
+						scene.add(obj);
+						
+						requestAnimationFrame(update);
+					}
+				});
+
+			},
+			// called while loading is progressing
+			function (xhr) {
+				console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+			},
+			// called when loading has errors
+			function (error) {
+				console.log( 'An error happened' );
+				console.log(error);
+			}
+		);
+		
+				
+		let rotation = 0.05;
+		let maxRotation = Math.PI * .05;
+		let minRotation = -maxRotation;
+		let maxReached = false;
+		let minReached = false;
+		
+		function update(){
+			
+			renderer.render(scene, camera);
+
+			requestAnimationFrame(update);
+			
+			// keep adding to rotation until max is reached. 
+			// if maxed is reached, keep decreasing rotation until min is reached.
+			// if min is reached, repeat step 1. 
+			if(obj.rotation.z < maxRotation && !maxReached)
+			{
+				obj.rotation.z += 0.002;
+				if(obj.rotation.z >= maxRotation){
+					maxReached = true;
+					minReached = false;
+				}
+			}else if(maxReached){
+				obj.rotation.z -= 0.002;
+				if(obj.rotation.z <= minRotation){
+					minReached = true;
+					maxReached = false;
+				}
+			}else if(minReached){
+				obj.rotation.z += 0.002;
+			}
+
+		}
+		
+			
+		
 	}
 	
 	/***

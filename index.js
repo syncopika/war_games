@@ -6,8 +6,8 @@ import { Game } from "./scripts/Game.js";
 
 ReactDOM.render(
 	<Game 
-		gridWidth={28}
-		gridHeight={15}
+		gridWidth={1400}
+		gridHeight={600}
 		handSize={3} 
 	/>,
 	document.getElementById('root')

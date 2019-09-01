@@ -1,5 +1,22 @@
 // utility functions that do general things
 // since functions in my enemy AI file and my Game file need to use these functions, they're here 
+import * as THREE from 'three';
+
+function convert2dCoordsTo3d(elementClicked, rendererObj, camera, containerWidth, containerHeight){
+	var target = rendererObj.domElement;
+	var box = target.getBoundingClientRect();
+
+	// this assumes elementClicked is a grid cell, whose parent is a row element, whose parent is the grid container (which is what we want)
+	var x1 = elementClicked.getBoundingClientRect().left - elementClicked.parentNode.parentNode.getBoundingClientRect().left + elementClicked.offsetWidth/2;
+	var y1 = elementClicked.getBoundingClientRect().top - elementClicked.parentNode.parentNode.getBoundingClientRect().top + elementClicked.offsetHeight/2;
+	var posX = x1 * target.width  / target.clientWidth;
+	var posY = y1 * target.height / target.clientHeight;
+
+	var x = posX / containerWidth * 2 - 1;
+	var y = posY / containerHeight * -2 + 1;
+	var v = new THREE.Vector3( x, y, -450 ).unproject( camera );
+	return v;
+}
 
 /*****
 	default path option
@@ -165,9 +182,17 @@ function leaveSpace(e){
 		// come up with a separate function to determine whether a square is within player territory
 		if(col > 25){
 			e.target.style.border = "1px solid #000";
-			
 		}
 	}
 }
 
-export { getPathsDefault, getAttackRange, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut };
+export { 
+	getPathsDefault, 
+	getAttackRange, 
+	getCell, 
+	validSpace, 
+	leaveSpace, 
+	selectEnemyOn, 
+	selectEnemyOut,
+	convert2dCoordsTo3d
+};

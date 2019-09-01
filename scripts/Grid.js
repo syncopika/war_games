@@ -1,10 +1,26 @@
 import { getPathsDefault, getAttackRange, getCell } from './Utils.js';
+import * as THREE from 'three';
 
 const Grid = (props) => {
 
 	// create the table cells
-	let w = Math.round(Math.floor(window.innerWidth / props.width) / 10) * 12; // calculate width of cell
-	let h = Math.round(Math.floor(window.innerHeight / props.height) / 10) * 8; // calculate height of cell
+	let numRows = Math.floor(props.height / 60); //Math.round(Math.floor(window.innerWidth / props.width) / 10) * 12; // calculate width of cell
+	let numCols = Math.floor(props.width / 52); //Math.round(Math.floor(window.innerHeight / props.height) / 10) * 8; // calculate height of cell
+	
+	let cellWidth = 100 / numCols; 
+	let cellHeight = 100 / numRows; 
+	
+	let containerStyle = {
+		'position': 'relative'
+	};
+	
+	let gridStyle = {
+		'width': props.width + 'px',
+		'height': props.height + 'px',
+		'position': 'absolute',
+		'top': 0,
+		'left': 0
+	};
 	
 	let rowStyle = {
 		'width': '100%',
@@ -14,17 +30,19 @@ const Grid = (props) => {
 	
 	let colStyle = {
 		'border': '1px solid #000',
-		'width': w + 'px',
-		'height': h + 'px',
-		'backgroundSize': '100% 50%',
-		'backgroundRepeat': 'no-repeat',
-		'backgroundPosition': "center"
+		'width': cellWidth + '%',
+		'height': cellHeight + '%'
+	};
+	
+	let tableStyle = {
+		'width': '100%',
+		'height': '100%'
 	};
 	
 	let rows = [];
-	for(let i = 0; i < props.height; i++){
+	for(let i = 0; i < numRows; i++){
 		let cols = [];
-		for(let j = 0; j < props.width; j++){
+		for(let j = 0; j < numCols; j++){
 			let newColId = 'row' + i + 'column' + j;
 			cols.push(
 				<td
@@ -46,16 +64,19 @@ const Grid = (props) => {
 					style={rowStyle}
 				>
 				{cols}
-				</tr>);
+				</tr>
+		);
 	}
 
 	return(
-		<div id='grid'>
-			<table>
-				<tbody>
-					{rows}
-				</tbody>
-			</table>
+		<div id='container' style={containerStyle}>
+			<div id='grid' style={gridStyle}>
+				<table style={tableStyle}>
+					<tbody>
+						{rows}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 	
