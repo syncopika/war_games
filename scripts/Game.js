@@ -17,10 +17,12 @@ class Game extends React.Component{
 	constructor(props){
 		super(props);
 		this.state = {
-			'width': this.props.gridWidth, //28,
-			'height': this.props.gridHeight, //15,
-			'playerUnits': [],
-			'enemyUnits': [],
+			'width': this.props.gridWidth, // width in px
+			'height': this.props.gridHeight, // height in px
+			'numRows': Math.floor(this.props.gridHeight / 60),
+			'numCols': Math.floor(this.props.gridWidth / 52),
+			'playerUnits': {}, // map a grid cell's id to a unit
+			'enemyUnits': {},
 			'playerDeck': new Deck([PancakeSniper, CompleteDomination, BearAttack]),
 			'enemyDeck': new Deck(),
 			'handSize': this.props.handSize, //4, // how many cards a hand can have at a time 
@@ -32,7 +34,14 @@ class Game extends React.Component{
 			'playerMoves': 1,
 			'currentEnemyUnit': null, // for displaying info of the current enemy selected
 			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
-			'playerTurn': true, // boolean indicating if player's turn or not,
+			'playerTurn': true, // boolean indicating if player's turn or not
+			'unitSizeMap': {
+				'battleship1': 3 // takes up 3 cells
+			},
+			'unitGeometries': {}, // map unit names to their geometries and materials (i.e. {'battleship1': {'geometry': {...}, 'material': {...}}})
+			'camera': null,
+			'renderer': null,
+			'scene': null
 		};
 		
 		// methods for binding to pass to child components 
@@ -69,7 +78,6 @@ class Game extends React.Component{
 		});
 		
 		// bind click event to highlight paths
-		//console.log(document);
 		for(let i = 0; i < Math.floor(height / 60); i++){
 			for(let j = 0; j < Math.floor(width / 52); j++){
 				let cell = document.getElementById('row' + i + 'column' + j);
@@ -81,18 +89,18 @@ class Game extends React.Component{
 		// populate map 
 		//self.placeRandom("./assets/battleship.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 		
-		// place enemies 
+		/* place enemies 
 		for(let i = 0; i < 10; i++){
 			//self.placeRandom("./assets/battleship2.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
-		}
+		}*/
 		
 		// place enemy boss
 		//self.placeRandom("./assets/battleship3.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 		
-		// place obstacles
+		/* place obstacles
 		for(let i = 0; i < 17; i++){
-			//self.placeObstacles(0, width, 0, height);
-		}
+			self.placeObstacles(0, width, 0, height);
+		}*/
 		
 		const WIDTH = 1400;
 		const HEIGHT = 600;
@@ -100,17 +108,14 @@ class Game extends React.Component{
 		const ASPECT = WIDTH / HEIGHT;
 		const NEAR = 1;
 		const FAR = 1000;
-		
-		const container = document.querySelector('#container');
-		
-		const renderer = new THREE.WebGLRenderer();
-		
 		const LEFT = WIDTH / -10;
 		const RIGHT = WIDTH / 10;
 		const TOP = HEIGHT / 10;
 		const BOTTOM = HEIGHT / -10;
-
-		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);
+		
+		const container = document.querySelector('#container');
+		const renderer = new THREE.WebGLRenderer();
+		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);	
 		const scene = new THREE.Scene();
 		scene.background = new THREE.Color( 0xffffff );
 		
@@ -118,6 +123,8 @@ class Game extends React.Component{
 		renderer.setSize(WIDTH, HEIGHT);	
 		container.appendChild(renderer.domElement);
 		renderer.render(scene, camera);
+		
+		this.setState({'renderer': renderer, 'camera': camera, 'scene': scene});
 		
 		let spotLight = new THREE.SpotLight( 0xffffff );
 		spotLight.position.set( 0, 0, 1 );
@@ -141,23 +148,32 @@ class Game extends React.Component{
 				//scene.add( gltf.scene );
 				gltf.scene.traverse((child) => {
 					if(child.type === "Mesh"){
-						console.log(child);
+						//console.log(child);
+						
+						// give the player 2 battleships 
 						let material = child.material;
 						let geometry = child.geometry;
-						obj = new THREE.Mesh(geometry, material);
 						
-						let gridCell = document.querySelector("#row4column19"); // note that there are multiple column18 ! :|
-						let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);
-						//lastGridCell = gridCell;
-						//lastGridCell.setAttribute("unit", "battleship1");
-						
-						obj.position.set(v.x, v.y, -450);
-						obj.scale.x = child.scale.x * 20;
-						obj.scale.y = child.scale.y * 20;
-						obj.scale.z = child.scale.z * 20;
-						obj.rotateOnAxis(new THREE.Vector3(0,1,0), Math.PI / 2); // note this on object's local axis! so when you rotate, the axes change (i.e. x becomes z)
-						obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
-						scene.add(obj);
+						for(let i = 0; i < 2; i++){
+							obj = new THREE.Mesh(geometry, material);
+							
+							let randomCol = Math.floor(Math.random() * (self.state.numCols - 1));
+							let randomRow = Math.floor(Math.random() * (self.state.numRows - 1));
+		
+							let gridCell = document.querySelector("#row" + randomRow + "column" + randomCol);
+							
+							self.state.playerUnits[gridCell.id] = obj;
+							
+							let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);
+							
+							obj.position.set(v.x, v.y, -450);
+							obj.scale.x = child.scale.x * 20;
+							obj.scale.y = child.scale.y * 20;
+							obj.scale.z = child.scale.z * 20;
+							obj.rotateOnAxis(new THREE.Vector3(0,1,0), Math.PI / 2); // note this on object's local axis! so when you rotate, the axes change (i.e. x becomes z)
+							obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
+							scene.add(obj);
+						}
 						
 						requestAnimationFrame(update);
 					}
@@ -175,7 +191,6 @@ class Game extends React.Component{
 			}
 		);
 		
-				
 		let rotation = 0.05;
 		let maxRotation = Math.PI * .05;
 		let minRotation = -maxRotation;
@@ -191,21 +206,24 @@ class Game extends React.Component{
 			// keep adding to rotation until max is reached. 
 			// if maxed is reached, keep decreasing rotation until min is reached.
 			// if min is reached, repeat step 1. 
-			if(obj.rotation.z < maxRotation && !maxReached)
-			{
-				obj.rotation.z += 0.002;
-				if(obj.rotation.z >= maxRotation){
-					maxReached = true;
-					minReached = false;
+			for(let unit in self.state.playerUnits){
+				let mesh = self.state.playerUnits[unit];
+				if(mesh.rotation.z < maxRotation && !maxReached)
+				{
+					mesh.rotation.z += 0.002;
+					if(mesh.rotation.z >= maxRotation){
+						maxReached = true;
+						minReached = false;
+					}
+				}else if(maxReached){
+					mesh.rotation.z -= 0.002;
+					if(mesh.rotation.z <= minRotation){
+						minReached = true;
+						maxReached = false;
+					}
+				}else if(minReached){
+					mesh.rotation.z += 0.002;
 				}
-			}else if(maxReached){
-				obj.rotation.z -= 0.002;
-				if(obj.rotation.z <= minRotation){
-					minReached = true;
-					maxReached = false;
-				}
-			}else if(minReached){
-				obj.rotation.z += 0.002;
 			}
 
 		}
@@ -224,16 +242,16 @@ class Game extends React.Component{
 
 		leftBound and rightBound are parameters to determine the range of where to place unit
 		
-		@element = path to the picture file for the unit
+		@unitName = name of the unit i.e. battleship1
 		@leftBound = column to start at
 		@rightBound = column to end at 
 		@topBound = top row boundary
 		@bottomBound = bottom row boundary
-		@stats = other information like className, id, health, attack, other html attributes in an associative array
+		@unitSizeMap = dictionary mapping unit name to its size (the number of cells it occupies)
 		
 		the bound params are INCLUSIVE
 	****/
-	placeRandom(element, leftBound, rightBound, bottomBound, topBound, stats){
+	placeRandom(mesh, leftBound, rightBound, bottomBound, topBound, unitSizeMap){
 
 		let randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
 		let randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
@@ -245,23 +263,24 @@ class Game extends React.Component{
 			randCell = getCell(randomRow, randomCol);
 		}
 		
+		/*
 		for(let property in stats){
 			if(property === "className"){
 				randCell.className = stats[property];
 			}else{
 				randCell.setAttribute(property, stats[property]);
 			}
-		}
+		}*/
 
-		randCell.style.backgroundImage = "url(" + element + ")";
+		//randCell.style.backgroundImage = "url(" + element + ")";
 		
-		// enemyUnits need to be pushed into the enemyUnits array
+		/* enemyUnits need to be pushed into the enemyUnits array
 		if(stats["className"] === "enemy"){
 			this.addToEnemyUnits(randCell);
 			
 		}else if(stats["className"] === "player"){
 			this.addToPlayerUnits(randCell);
-		}
+		}*/
 	}
 	
 	// place obstacles randomly
@@ -290,14 +309,14 @@ class Game extends React.Component{
 		//console.log(playerList.length);
 
 		// only the player can select/move their own units 
-		if(!playerList.includes(currElement)){
+		if(playerList[currElement.id] === undefined){
 			return;
 		}
 		
 		// also can only move if it's the player's turn 
 		
 		// what kind of unit is it?
-		if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathlight') == 0){
+		if(currElement.getAttribute('pathlight') == 0){
 			// light up the paths 
 			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
@@ -318,7 +337,7 @@ class Game extends React.Component{
 				}
 			}
 			
-		}else if(currElement.style.backgroundImage !== "" && currElement.getAttribute('pathlight') == 1){
+		}else if(currElement.getAttribute('pathlight') == 1){
 			// this is deselecting a unit 
 			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
@@ -377,16 +396,12 @@ class Game extends React.Component{
 			return;
 		}
 		
-		if(element.className === "obstacle"){
-			return;
-		}
-		
 		if(this.state.playerMoves === 0){
 			this.updateConsole("no more moves left!");
 			return;
 		}
 		
-		// if square is highlighted or red (#FF1919) (for ranged units like pancake sniper)
+		// if square is highlighted or red (#FF1919) (for ranged units)
 		if(element.style.border === '1px solid rgb(221, 223, 255)' || element.style.border === '1px solid rgb(255, 25, 25)'){
 			
 			// red squares only indicate attack range, not movement, so don't allow movement there 
@@ -407,7 +422,12 @@ class Game extends React.Component{
 				}
 			
 				// move the unit there 
-				element.style.backgroundImage = playerUnit.style.backgroundImage;
+				//element.style.backgroundImage = playerUnit.style.backgroundImage;
+				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
+				let obj = this.state.playerUnits[playerUnit.id];
+				obj.position.x = v.x;
+				obj.position.y = v.y;
+				
 				element.setAttribute("health", playerUnit.getAttribute("health"));
 				element.setAttribute("attack", playerUnit.getAttribute("attack"));
 				element.setAttribute("unitType", playerUnit.getAttribute("unitType"));
@@ -426,13 +446,14 @@ class Game extends React.Component{
 				}
 			
 				// update player array 
-				for(let i = 0; i < this.state.playerUnits.length; i++){
-					if(this.state.playerUnits[i] === playerUnit){
+				//for(let i = 0; i < this.state.playerUnits.length; i++){
+					if(this.state.playerUnits[playerUnit.id]){
 						// replace old cell representing this unit with new cell holding the moved unit
-						this.updatePlayerUnitsAtIndex(element, i);
-						break;
+						//this.updatePlayerUnitsAtIndex(element, i);
+						delete this.state.playerUnits[playerUnit.id];
+						//break;
 					}
-				}
+				//}
 				
 				// set currentUnit to new location
 				this.selectPlayerUnit(element);
@@ -729,6 +750,8 @@ class Game extends React.Component{
 				<Grid 
 					width={this.state.width}
 					height={this.state.height}
+					numRows={this.state.numRows}
+					numCols={this.state.numCols}
 				/>
 				
 				<br />

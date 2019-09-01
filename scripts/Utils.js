@@ -3,18 +3,18 @@
 import * as THREE from 'three';
 
 function convert2dCoordsTo3d(elementClicked, rendererObj, camera, containerWidth, containerHeight){
-	var target = rendererObj.domElement;
-	var box = target.getBoundingClientRect();
+	let target = rendererObj.domElement;
+	let box = target.getBoundingClientRect();
 
 	// this assumes elementClicked is a grid cell, whose parent is a row element, whose parent is the grid container (which is what we want)
-	var x1 = elementClicked.getBoundingClientRect().left - elementClicked.parentNode.parentNode.getBoundingClientRect().left + elementClicked.offsetWidth/2;
-	var y1 = elementClicked.getBoundingClientRect().top - elementClicked.parentNode.parentNode.getBoundingClientRect().top + elementClicked.offsetHeight/2;
-	var posX = x1 * target.width  / target.clientWidth;
-	var posY = y1 * target.height / target.clientHeight;
+	let x1 = elementClicked.getBoundingClientRect().left - elementClicked.parentNode.parentNode.getBoundingClientRect().left + elementClicked.offsetWidth/2;
+	let y1 = elementClicked.getBoundingClientRect().top - elementClicked.parentNode.parentNode.getBoundingClientRect().top + elementClicked.offsetHeight/2;
+	let posX = x1 * target.width  / target.clientWidth;
+	let posY = y1 * target.height / target.clientHeight;
 
-	var x = posX / containerWidth * 2 - 1;
-	var y = posY / containerHeight * -2 + 1;
-	var v = new THREE.Vector3( x, y, -450 ).unproject( camera );
+	let x = posX / containerWidth * 2 - 1;
+	let y = posY / containerHeight * -2 + 1;
+	let v = new THREE.Vector3( x, y, -450 ).unproject( camera );
 	return v;
 }
 

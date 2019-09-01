@@ -4,11 +4,11 @@ import * as THREE from 'three';
 const Grid = (props) => {
 
 	// create the table cells
-	let numRows = Math.floor(props.height / 60); //Math.round(Math.floor(window.innerWidth / props.width) / 10) * 12; // calculate width of cell
-	let numCols = Math.floor(props.width / 52); //Math.round(Math.floor(window.innerHeight / props.height) / 10) * 8; // calculate height of cell
+	let numRows = props.numRows; //Math.round(Math.floor(window.innerWidth / props.width) / 10) * 12; // calculate width of cell
+	let numCols = props.numCols; //Math.round(Math.floor(window.innerHeight / props.height) / 10) * 8; // calculate height of cell
 	
-	let cellWidth = 100 / numCols; 
-	let cellHeight = 100 / numRows; 
+	let cellWidth = 100 / numCols; // a percentage of 100
+	let cellHeight = 100 / numRows; // a percentage of 100
 	
 	let containerStyle = {
 		'position': 'relative'
