@@ -41,7 +41,8 @@ class Game extends React.Component{
 			'unitGeometries': {}, // map unit names to their geometries and materials (i.e. {'battleship1': {'geometry': {...}, 'material': {...}}})
 			'camera': null,
 			'renderer': null,
-			'scene': null
+			'scene': null,
+			'loader': new GLTFLoader();
 		};
 		
 		// methods for binding to pass to child components 
@@ -136,14 +137,20 @@ class Game extends React.Component{
 		spotLight.shadow.camera.fov = 30;
 		scene.add(spotLight);
 			
-		let loader = new GLTFLoader();
-		let obj;
+		//let loader = new GLTFLoader();
+		self.getModel().then((object) => {
+			console.log("got the object mesh");
+			obj = object;
+			scene.add(obj);
+		});
+		
+		/*
 		// Load a glTF resource
 		loader.load(
 			// resource URL
 			'../assets/battleship-edit.glb',
 			// called when the resource is loaded
-			function (gltf) {
+			function(gltf){
 
 				//scene.add( gltf.scene );
 				gltf.scene.traverse((child) => {
@@ -181,15 +188,17 @@ class Game extends React.Component{
 
 			},
 			// called while loading is progressing
-			function (xhr) {
+			function(xhr){
 				console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
 			},
 			// called when loading has errors
-			function (error) {
+			function(error){
 				console.log( 'An error happened' );
 				console.log(error);
 			}
 		);
+		
+		*/
 		
 		let rotation = 0.05;
 		let maxRotation = Math.PI * .05;
@@ -197,10 +206,8 @@ class Game extends React.Component{
 		let maxReached = false;
 		let minReached = false;
 		
-		function update(){
-			
+		function update(){		
 			renderer.render(scene, camera);
-
 			requestAnimationFrame(update);
 			
 			// keep adding to rotation until max is reached. 
@@ -225,12 +232,66 @@ class Game extends React.Component{
 					mesh.rotation.z += 0.002;
 				}
 			}
-
 		}
 		
-			
-		
 	}
+	
+	getModel(){
+		return new Promise(resolve, reject){
+			loader.load(
+				// resource URL
+				'../assets/battleship-edit.glb',
+				// called when the resource is loaded
+				function(gltf){
+
+					//scene.add( gltf.scene );
+					gltf.scene.traverse((child) => {
+						if(child.type === "Mesh"){
+							//console.log(child);
+							
+							// give the player 2 battleships 
+							let material = child.material;
+							let geometry = child.geometry;
+							
+
+							let obj = new THREE.Mesh(geometry, material);
+							
+							let randomCol = Math.floor(Math.random() * (self.state.numCols - 1));
+							let randomRow = Math.floor(Math.random() * (self.state.numRows - 1));
+		
+							let gridCell = document.querySelector("#row" + randomRow + "column" + randomCol);
+							
+							self.state.playerUnits[gridCell.id] = obj;
+							
+							let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);
+							
+							obj.position.set(v.x, v.y, -450);
+							obj.scale.x = child.scale.x * 20;
+							obj.scale.y = child.scale.y * 20;
+							obj.scale.z = child.scale.z * 20;
+							obj.rotateOnAxis(new THREE.Vector3(0,1,0), Math.PI / 2); // note this on object's local axis! so when you rotate, the axes change (i.e. x becomes z)
+							obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
+							
+							resolve(obj);
+							//scene.add(obj);
+							//requestAnimationFrame(update);
+						}
+					});
+
+				},
+				// called while loading is progressing
+				function(xhr){
+					console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+				},
+				// called when loading has errors
+				function(error){
+					console.log( 'An error happened' );
+					console.log(error);
+				}
+			);
+		}
+	}
+	
 	
 	/***
 		functions for creating initial state of game 
