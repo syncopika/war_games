@@ -15,7 +15,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 /*** NOTES
 
-how about this:
+how about this for a new idea:
 
 stack a transparent canvas (2d) on top of the webgl one instead of using an html grid.
 on the transparent canvas you can draw a circle showing the attack/movement range of the current ship.
@@ -152,20 +152,29 @@ class Game extends React.Component{
 			
 		//let loader = new GLTFLoader();
 		let obj = null;
-		self.getModel('../assets/battleship2.glb').then((object) => {
-			console.log("got the object mesh");
-			obj = object;
-			
-			let randomCol = Math.floor(Math.random() * (self.state.numCols - 1));
-			let randomRow = Math.floor(Math.random() * (self.state.numRows - 1));
+		let loadedModels = [];
+		loadedModels.push(self.getModel('../assets/battleship-edit.glb', 'player'));
+		loadedModels.push(self.getModel('../assets/battleship2.glb', 'enemy'));
+		
+		Promise.all(loadedModels).then((objects) => {
+			objects.forEach((obj) => {
+	
+				let randomCol = Math.floor(Math.random() * (self.state.numCols - 1));
+				let randomRow = Math.floor(Math.random() * (self.state.numRows - 1));
 
-			let gridCell = document.querySelector("#row" + randomRow + "column" + randomCol);
-			self.state.playerUnits[gridCell.id] = obj;
-			
-			let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);	
-			obj.position.set(v.x, v.y, -450);
-			
-			scene.add(obj);
+				let gridCell = document.querySelector("#row" + randomRow + "column" + randomCol);
+				
+				let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);	
+				obj.position.set(v.x, v.y, -450);
+				
+				scene.add(obj);
+				
+				if(obj.side === "enemy"){
+					self.state.enemyUnits[gridCell.id] = obj;
+				}else{
+					self.state.playerUnits[gridCell.id] = obj;
+				}
+			});
 			requestAnimationFrame(update);
 		});
 		
@@ -182,8 +191,9 @@ class Game extends React.Component{
 			// keep adding to rotation until max is reached. 
 			// if maxed is reached, keep decreasing rotation until min is reached.
 			// if min is reached, repeat step 1. 
-			for(let unit in self.state.playerUnits){
-				let mesh = self.state.playerUnits[unit];
+			let allUnits = new Set(Object.values(self.state.playerUnits).concat(Object.values(self.state.enemyUnits)));
+			allUnits.forEach((mesh) => {
+				//console.log(mesh);
 				if(mesh.rotation.z < maxRotation && !maxReached)
 				{
 					mesh.rotation.z += 0.002;
@@ -200,27 +210,22 @@ class Game extends React.Component{
 				}else if(minReached){
 					mesh.rotation.z += 0.002;
 				}
-			}
+			});
 		}
 	}
 	
-	getModel(modelFilePath){
+	getModel(modelFilePath, side){
 		return new Promise((resolve, reject) => {
 			this.state.loader.load(
 				// resource URL
 				modelFilePath,
 				// called when the resource is loaded
 				function(gltf){
-
-					//scene.add( gltf.scene );
 					gltf.scene.traverse((child) => {
 						if(child.type === "Mesh"){
-							//console.log(child);
-							
+			
 							let material = child.material;
 							let geometry = child.geometry;
-							
-
 							let obj = new THREE.Mesh(geometry, material);
 							
 							obj.scale.x = child.scale.x * 20;
@@ -229,11 +234,10 @@ class Game extends React.Component{
 							obj.rotateOnAxis(new THREE.Vector3(0,1,0), Math.PI / 2); // note this on object's local axis! so when you rotate, the axes change (i.e. x becomes z)
 							obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
 						
-							
+							obj.side = side; // player or enemy mesh?
 							resolve(obj);
 						}
 					});
-
 				},
 				// called while loading is progressing
 				function(xhr){
@@ -418,6 +422,13 @@ class Game extends React.Component{
 			return;
 		}
 		
+		/***
+			
+			also need to check enemy units and their locations to see whether the next square over 
+			is a valid move or possibly an attack. 
+		
+		***/
+		
 		// if square is highlighted or red (#FF1919) (for ranged units)
 		if(element.style.border === '1px solid rgb(221, 223, 255)' || element.style.border === '1px solid rgb(255, 25, 25)'){
 			
@@ -463,6 +474,7 @@ class Game extends React.Component{
 				}
 			
 				// update player array 
+				let mesh = this.state.playerUnits[playerUnit.id];
 				//for(let i = 0; i < this.state.playerUnits.length; i++){
 					if(this.state.playerUnits[playerUnit.id]){
 						// replace old cell representing this unit with new cell holding the moved unit
@@ -474,6 +486,7 @@ class Game extends React.Component{
 				
 				// set currentUnit to new location
 				this.selectPlayerUnit(element);
+				this.state.playerUnits[element] = obj;
 				
 				// update playerMoves 
 				this.setPlayerMoves(this.state.playerMoves - 1);
