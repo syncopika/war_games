@@ -13,6 +13,19 @@ import { BearAttack } from "./cards/card3.js";
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
+/*** NOTES
+
+how about this:
+
+stack a transparent canvas (2d) on top of the webgl one instead of using an html grid.
+on the transparent canvas you can draw a circle showing the attack/movement range of the current ship.
+the circle will only appear when you click on a ship. 
+
+in this way, we can have our ships move around arbitrarily! no need to keep track of what grid cell it's on 
+for one thing. 
+
+***/
+
 class Game extends React.Component{
 	constructor(props){
 		super(props);
@@ -139,7 +152,7 @@ class Game extends React.Component{
 			
 		//let loader = new GLTFLoader();
 		let obj = null;
-		self.getModel().then((object) => {
+		self.getModel('../assets/battleship2.glb').then((object) => {
 			console.log("got the object mesh");
 			obj = object;
 			
@@ -152,12 +165,9 @@ class Game extends React.Component{
 			let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);	
 			obj.position.set(v.x, v.y, -450);
 			
-			
 			scene.add(obj);
 			requestAnimationFrame(update);
 		});
-		
-
 		
 		let rotation = 0.05;
 		let maxRotation = Math.PI * .05;
@@ -194,11 +204,11 @@ class Game extends React.Component{
 		}
 	}
 	
-	getModel(){
+	getModel(modelFilePath){
 		return new Promise((resolve, reject) => {
 			this.state.loader.load(
 				// resource URL
-				'../assets/battleship-edit.glb',
+				modelFilePath,
 				// called when the resource is loaded
 				function(gltf){
 
