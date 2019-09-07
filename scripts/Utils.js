@@ -59,6 +59,13 @@ function getPathsDefault(element){
 	paths['left'] = element.previousSibling;
 	paths['right'] = element.nextSibling;
 	
+	// eliminate null paths 
+	for(let path in paths){
+		if(paths[path] === null){
+			delete paths[path];
+		}
+	}
+	
 	return paths;
 }
 

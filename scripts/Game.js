@@ -100,24 +100,14 @@ class Game extends React.Component{
 			}
 		}
 		
-		// populate map 
-		//self.placeRandom("./assets/battleship.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
-		
-		/* place enemies 
+
+		// place obstacles
 		for(let i = 0; i < 10; i++){
-			//self.placeRandom("./assets/battleship2.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
-		}*/
+			self.placeObstacles(0, self.state.numCols, 0, self.state.numRows);
+		}
 		
-		// place enemy boss
-		//self.placeRandom("./assets/battleship3.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
-		
-		/* place obstacles
-		for(let i = 0; i < 17; i++){
-			self.placeObstacles(0, width, 0, height);
-		}*/
-		
-		const WIDTH = 1400;
-		const HEIGHT = 600;
+		const WIDTH = self.state.width; //1400;
+		const HEIGHT = self.state.height; //600;
 		const VIEW_ANGLE = 100;
 		const ASPECT = WIDTH / HEIGHT;
 		const NEAR = 1;
@@ -143,10 +133,10 @@ class Game extends React.Component{
 		let spotLight = new THREE.SpotLight( 0xffffff );
 		spotLight.position.set( 0, 0, 1 );
 		spotLight.castShadow = true;
-		spotLight.shadow.mapSize.width = 2000;
-		spotLight.shadow.mapSize.height = 2000;
-		spotLight.shadow.camera.near = 500;
-		spotLight.shadow.camera.far = 4000;
+		spotLight.shadow.mapSize.width = 3000;
+		spotLight.shadow.mapSize.height = 500;
+		spotLight.shadow.camera.near = 10;
+		spotLight.shadow.camera.far = 1000;
 		spotLight.shadow.camera.fov = 30;
 		scene.add(spotLight);
 			
@@ -159,21 +149,14 @@ class Game extends React.Component{
 		Promise.all(loadedModels).then((objects) => {
 			objects.forEach((obj) => {
 	
-				let randomCol = Math.floor(Math.random() * (self.state.numCols - 1));
-				let randomRow = Math.floor(Math.random() * (self.state.numRows - 1));
-
-				let gridCell = document.querySelector("#row" + randomRow + "column" + randomCol);
-				
-				let v = convert2dCoordsTo3d(gridCell, renderer, camera, WIDTH, HEIGHT);	
-				obj.position.set(v.x, v.y, -450);
-				
-				scene.add(obj);
-				
 				if(obj.side === "enemy"){
-					self.state.enemyUnits[gridCell.id] = obj;
+					self.placeObject(3, self.state.numRows - 3, 2, Math.floor(self.state.numCols/2), obj);
+					scene.add(obj);
 				}else{
-					self.state.playerUnits[gridCell.id] = obj;
+					self.placeObject(3, self.state.numRows - 3, Math.floor(self.state.numCols/2) + 1, self.state.numCols - 2, obj);
+					scene.add(obj);
 				}
+				
 			});
 			requestAnimationFrame(update);
 		});
@@ -193,7 +176,6 @@ class Game extends React.Component{
 			// if min is reached, repeat step 1. 
 			let allUnits = new Set(Object.values(self.state.playerUnits).concat(Object.values(self.state.enemyUnits)));
 			allUnits.forEach((mesh) => {
-				//console.log(mesh);
 				if(mesh.rotation.z < maxRotation && !maxReached)
 				{
 					mesh.rotation.z += 0.002;
@@ -252,6 +234,37 @@ class Game extends React.Component{
 		});
 	}
 	
+	getRandomCell(startRow, endRow, startCol, endCol){
+		let randomCol = Math.floor(Math.random() * (endCol - startCol + 1) + startCol);
+		let randomRow = Math.floor(Math.random() * (endRow - startRow + 1) + startRow);
+		let gridCell = document.querySelector("#row" + randomRow + "column" + randomCol);
+		return gridCell;
+	}
+	
+	setCellAttributes(element, attributes){
+		for(let property in attributes){
+			if(property === "className"){
+				element.className = attributes[property];
+			}else{
+				element.setAttribute(property, attributes[property]);
+			}
+		}		
+	}
+	
+	placeObject(startRow, endRow, startCol, endCol, object, stats){
+		let gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
+		let v = convert2dCoordsTo3d(gridCell, this.state.renderer, this.state.camera, this.state.width, this.state.height);
+		object.position.set(v.x, v.y, -450);
+		
+		if(object.side === "enemy"){
+			this.state.enemyUnits[gridCell.id] = object;
+			this.setCellAttributes(gridCell, {'health': 100, 'attack': 20, 'className': 'enemy', 'unitType': 'boss'});
+		}else{
+			this.state.playerUnits[gridCell.id] = object;
+			this.setCellAttributes(gridCell, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+		}		
+	}
+	
 	
 	/***
 		functions for creating initial state of game 
@@ -284,24 +297,23 @@ class Game extends React.Component{
 			randCell = getCell(randomRow, randomCol);
 		}
 		
-		/*
 		for(let property in stats){
 			if(property === "className"){
 				randCell.className = stats[property];
 			}else{
 				randCell.setAttribute(property, stats[property]);
 			}
-		}*/
+		}
 
-		//randCell.style.backgroundImage = "url(" + element + ")";
+		randCell.style.backgroundImage = "url(" + element + ")";
 		
-		/* enemyUnits need to be pushed into the enemyUnits array
+		// enemyUnits need to be pushed into the enemyUnits array
 		if(stats["className"] === "enemy"){
 			this.addToEnemyUnits(randCell);
 			
 		}else if(stats["className"] === "player"){
 			this.addToPlayerUnits(randCell);
-		}*/
+		}
 	}
 	
 	// place obstacles randomly
@@ -337,6 +349,7 @@ class Game extends React.Component{
 		// also can only move if it's the player's turn 
 		
 		// what kind of unit is it?
+		// double equals cause pathlight value might be a string (so need looser comparison) 
 		if(currElement.getAttribute('pathlight') == 0){
 			// light up the paths 
 			let elementPaths = getPathsDefault(currElement);
@@ -422,10 +435,21 @@ class Game extends React.Component{
 			return;
 		}
 		
+		let cellDirection;
+		let currUnitsPaths = getPathsDefault(playerUnit);
+		for(let path in currUnitsPaths){
+			if(element.id === currUnitsPaths[path].id){
+				cellDirection = path;
+				break;
+			}
+		}
+		
 		/***
 			
 			also need to check enemy units and their locations to see whether the next square over 
 			is a valid move or possibly an attack. 
+		
+			track direction - see if unit needs to be rotated before moving 
 		
 		***/
 		
@@ -449,12 +473,41 @@ class Game extends React.Component{
 					}
 				}
 			
-				// move the unit there 
-				//element.style.backgroundImage = playerUnit.style.backgroundImage;
+				// move the unit there
 				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
 				let obj = this.state.playerUnits[playerUnit.id];
-				obj.position.x = v.x;
-				obj.position.y = v.y;
+				
+				function move(direction, object, target, setIntervalName){
+					// stop movement if reach target		
+					// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
+					if(direction == "left"){
+						object.position.x -= .2;
+						if(object.position.x <= target.x){
+							clearInterval(setIntervalName);
+						}
+					}else if(direction == "right"){
+						object.position.x += .2;
+						if(object.position.x >= target.x){
+							clearInterval(setIntervalName);
+						}
+					}else if(direction == "top"){
+						object.position.y += .2;
+						if(object.position.y >= target.y){
+							clearInterval(setIntervalName);
+						}
+					}else{
+						object.position.y -= .2;
+						if(object.position.y <= target.y){
+							clearInterval(setIntervalName);
+						}
+					}
+				}
+				
+				let moveFunc = setInterval(
+					function(){
+						move(cellDirection, obj, v, moveFunc);
+					}, 50
+				);
 				
 				element.setAttribute("health", playerUnit.getAttribute("health"));
 				element.setAttribute("attack", playerUnit.getAttribute("attack"));
@@ -486,7 +539,7 @@ class Game extends React.Component{
 				
 				// set currentUnit to new location
 				this.selectPlayerUnit(element);
-				this.state.playerUnits[element] = obj;
+				this.state.playerUnits[element.id] = obj;
 				
 				// update playerMoves 
 				this.setPlayerMoves(this.state.playerMoves - 1);
@@ -572,6 +625,8 @@ class Game extends React.Component{
 		}
 	}
 	
+	
+	
 	/*****
 		enemy's turn 
 		@enemyAI = a function that tells each enemy unit how to move
@@ -587,7 +642,7 @@ class Game extends React.Component{
 			alert('enemy ended turn');
 			this.endEnemyTurn();
 			// reset player's moves 
-			this.setPlayerMoves(this.state.playerUnits.length + this.state.playerHand.length);
+			this.setPlayerMoves(Object.keys(this.state.playerUnits).length + this.state.playerHand.length);
 		});
 	}
 	
@@ -617,13 +672,13 @@ class Game extends React.Component{
 	
 	clearEnemyUnits(){
 		this.setState({
-			'enemyUnits': []
+			'enemyUnits': {}
 		});
 	}
 	
 	clearPlayerUnits(){
 		this.setState({
-			'playerUnits': []
+			'playerUnits': {}
 		});
 	}
 	
