@@ -18,48 +18,135 @@ function convert2dCoordsTo3d(elementClicked, rendererObj, camera, containerWidth
 	return v;
 }
 
+// target = dom element of grid cell to go to 
+// current = dom element currently in 
+function getMoveDirection(target, current){
+	let cellDirection;
+	let currUnitsPaths = getPathsDefault(current);
+	for(let path in currUnitsPaths){
+		if(target.id === currUnitsPaths[path].id){
+			cellDirection = path;
+			break;
+		}
+	}
+	return cellDirection;
+}
+
+function move(direction, object, target, setIntervalName){
+	// stop movement if reach target		
+	// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
+	if(direction == "left"){
+		object.position.x -= .2;
+		if(object.position.x <= target.x){
+			clearInterval(setIntervalName);
+		}
+	}else if(direction == "right"){
+		object.position.x += .2;
+		if(object.position.x >= target.x){
+			clearInterval(setIntervalName);
+		}
+	}else if(direction == "top"){
+		object.position.y += .2;
+		if(object.position.y >= target.y){
+			clearInterval(setIntervalName);
+		}
+	}else{
+		object.position.y -= .2;
+		if(object.position.y <= target.y){
+			clearInterval(setIntervalName);
+		}
+	}
+}
+
 /*****
 	default path option
 	get the top, bottom, left, and right cells of clicked-on unit 
 *******/
 function getPathsDefault(element){
+	
+	// need to decide which cells are valid moves depending on the direction of the unit in this element
+	// we also need to know how many cells this unit spans
+	// if unit is facing in a vertical direction, left and right should be directly adjacent.
+	// if in a horizontal direction, then the left and right is based on span.
+	// note we're supporting units that span 3 cells or 1 cell right now.
+	
 	// this element will return the top, bottom, left and right blocks
 	let paths = {};
-	
+	let span = element.getAttribute("span"); // how many cells does this unit span 
+	let direction = element.getAttribute("direction");
 	let column = parseInt(element.id.match(/\d+/g)[1]);
+	let prevRowParent = element.parentNode.previousSibling;
+	let nextRowParent = element.parentNode.nextSibling.childNodes;
+	let nums = element.id.match(/\d+/g);
 	
-	// top coordinate is row - 1, same column num
-	// bottom coord is row + 1, same column num
-	// left coord is column num - 1, same row 
-	// right coord is column num + 1, same row 
-	if(element.parentNode.previousSibling){	
-		let previousRow = element.parentNode.previousSibling.childNodes;
-		for(let i = 0; i < previousRow.length; i++){
-			if(previousRow[i].id.match(/\d+/g)[1] == column){
-				paths['top'] = previousRow[i];
-				break;
+	if(span == 3){
+		if(direction === "left" || direction === "right"){
+			if(prevRowParent){
+				let previousRow = element.parentNode.previousSibling.childNodes;
+				for(let i = 0; i < previousRow.length; i++){
+					if(previousRow[i].id.match(/\d+/g)[1] == column){
+						paths['top'] = previousRow[i];
+						break;
+					}
+				}
+			}
+			
+			// there's probably a better way to do this...
+			try{
+				paths['left'] = element.previousSibling.previousSibling.previousSibling;
+			}catch(err){
+			}
+			
+			try{
+				paths['right'] = element.nextSibling.nextSibling.nextSibling;
+			}catch(err){
+			}
+		}else{
+			try{
+				let topRowParent = prevRowParent.previousSibling;
+				let topElementToFind = "row" + (nums[0] - 2) + "col" + nums[1];
+				paths['top'] = topRowParent.querySelector('.' + topElementToFind);
+			}catch(err){
+			}
+			
+			try{
+				let bottomRowParent = nextRowParent.nextSibling;
+				let bottomElementToFind = "row" + (nums[0] + 2) + "col" + nums[1];
+				paths['bottom'] = bottomRowParent.querySelector('.' + bottomElementToFind);
+			}catch(err){
+			}
+			paths['left'] = element.previousSibling;
+			paths['right'] = element.nextSibling;		
+		}
+	}else{	
+		// top coordinate is row - 1, same column num
+		// bottom coord is row + 1, same column num
+		// left coord is column num - 1, same row 
+		// right coord is column num + 1, same row 
+		if(prevRowParent){	
+			let previousRow = element.parentNode.previousSibling.childNodes;
+			for(let i = 0; i < previousRow.length; i++){
+				if(previousRow[i].id.match(/\d+/g)[1] == column){
+					paths['top'] = previousRow[i];
+					break;
+				}
 			}
 		}
-	}else{
-		paths['top'] = null;
-	}
-	
-	if(element.parentNode.nextSibling){
-		let nextRow = element.parentNode.nextSibling.childNodes;
-		for(let i = 0; i < nextRow.length; i++){
-			if(nextRow[i].id.match(/\d+/g)[1] == column){
-				paths['bottom'] = nextRow[i];
-				break;
+		
+		if(nextRowParent){
+			let nextRow = element.parentNode.nextSibling.childNodes;
+			for(let i = 0; i < nextRow.length; i++){
+				if(nextRow[i].id.match(/\d+/g)[1] == column){
+					paths['bottom'] = nextRow[i];
+					break;
+				}
 			}
 		}
-	}else{
-		paths['bottom'] = null;
+		
+		paths['left'] = element.previousSibling;
+		paths['right'] = element.nextSibling;
 	}
 	
-	paths['left'] = element.previousSibling;
-	paths['right'] = element.nextSibling;
-	
-	// eliminate null paths 
 	for(let path in paths){
 		if(paths[path] === null){
 			delete paths[path];
@@ -201,5 +288,7 @@ export {
 	leaveSpace, 
 	selectEnemyOn, 
 	selectEnemyOut,
-	convert2dCoordsTo3d
+	convert2dCoordsTo3d,
+	move,
+	getMoveDirection
 };

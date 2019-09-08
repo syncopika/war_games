@@ -1,4 +1,14 @@
-import { getPathsDefault, getAttackRange, getCell, validSpace, leaveSpace, selectEnemyOn, selectEnemyOut, convert2dCoordsTo3d } from './Utils.js';
+import { getPathsDefault, 
+		 getAttackRange, 
+		 getCell, 
+		 validSpace, 
+		 leaveSpace, 
+		 selectEnemyOn, 
+		 selectEnemyOut, 
+		 convert2dCoordsTo3d, 
+		 move, 
+		 getMoveDirection 
+	  } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
 import { GameConsole } from './GameConsole.js';
@@ -48,15 +58,17 @@ class Game extends React.Component{
 			'currentEnemyUnit': null, // for displaying info of the current enemy selected
 			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
 			'playerTurn': true, // boolean indicating if player's turn or not
-			'unitSizeMap': {
-				'battleship1': 3 // takes up 3 cells
-			},
-			'unitGeometries': {}, // map unit names to their geometries and materials (i.e. {'battleship1': {'geometry': {...}, 'material': {...}}})
 			'camera': null,
 			'renderer': null,
 			'scene': null,
 			'loader': new GLTFLoader()
 		};
+		
+		this.pathHighlight = "1px solid rgb(175, 223, 255)";
+		this.attackRangeHighlight = "1px solid rgb(255, 25, 25)";
+		
+		this.playerUnitStats = {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss', 'direction': 'left', 'span': 3};
+		this.enemyUnitStats = {'health': 100, 'attack': 20, 'className': 'enemy', 'unitType': 'boss', 'direction': 'right', 'span': 3};
 		
 		// methods for binding to pass to child components 
 		this.drawCards = this.drawCards.bind(this);
@@ -140,7 +152,6 @@ class Game extends React.Component{
 		spotLight.shadow.camera.fov = 30;
 		scene.add(spotLight);
 			
-		//let loader = new GLTFLoader();
 		let obj = null;
 		let loadedModels = [];
 		loadedModels.push(self.getModel('../assets/battleship-edit.glb', 'player'));
@@ -148,15 +159,13 @@ class Game extends React.Component{
 		
 		Promise.all(loadedModels).then((objects) => {
 			objects.forEach((obj) => {
-	
 				if(obj.side === "enemy"){
-					self.placeObject(3, self.state.numRows - 3, 2, Math.floor(self.state.numCols/2), obj);
+					self.placeObject(3, self.state.numRows - 3, 2, Math.floor(self.state.numCols/2), obj, this.enemyUnitStats);
 					scene.add(obj);
 				}else{
-					self.placeObject(3, self.state.numRows - 3, Math.floor(self.state.numCols/2) + 1, self.state.numCols - 2, obj);
+					self.placeObject(3, self.state.numRows - 3, Math.floor(self.state.numCols/2) + 1, self.state.numCols - 2, obj, this.playerUnitStats);
 					scene.add(obj);
 				}
-				
 			});
 			requestAnimationFrame(update);
 		});
@@ -199,9 +208,7 @@ class Game extends React.Component{
 	getModel(modelFilePath, side){
 		return new Promise((resolve, reject) => {
 			this.state.loader.load(
-				// resource URL
 				modelFilePath,
-				// called when the resource is loaded
 				function(gltf){
 					gltf.scene.traverse((child) => {
 						if(child.type === "Mesh"){
@@ -251,24 +258,15 @@ class Game extends React.Component{
 		}		
 	}
 	
-	placeObject(startRow, endRow, startCol, endCol, object, stats){
-		let gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
-		let v = convert2dCoordsTo3d(gridCell, this.state.renderer, this.state.camera, this.state.width, this.state.height);
-		object.position.set(v.x, v.y, -450);
-		
-		if(object.side === "enemy"){
-			this.state.enemyUnits[gridCell.id] = object;
-			this.setCellAttributes(gridCell, {'health': 100, 'attack': 20, 'className': 'enemy', 'unitType': 'boss'});
-		}else{
-			this.state.playerUnits[gridCell.id] = object;
-			this.setCellAttributes(gridCell, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
-		}		
+	removeCellAttributes(element, attributes){
+		for(let property in attributes){
+			if(propert === "className"){
+				element.classList.remove(attributes[property]);
+			}else{
+				element.removeAttribute(property);
+			}
+		}
 	}
-	
-	
-	/***
-		functions for creating initial state of game 
-	***/
 	
 	/****
 		place unit in random location
@@ -281,41 +279,29 @@ class Game extends React.Component{
 		@rightBound = column to end at 
 		@topBound = top row boundary
 		@bottomBound = bottom row boundary
-		@unitSizeMap = dictionary mapping unit name to its size (the number of cells it occupies)
-		
+		@stats = dictionary containing unit attributes to add to grid cell element
 		the bound params are INCLUSIVE
 	****/
-	placeRandom(mesh, leftBound, rightBound, bottomBound, topBound, unitSizeMap){
-
-		let randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
-		let randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
-		let randCell = getCell(randomRow, randomCol);
+	placeObject(startRow, endRow, startCol, endCol, object, stats){
+		let gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
 		
-		while(randCell.style.backgroundImage !== ""){
-			randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
-			randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
-			randCell = getCell(randomRow, randomCol);
+		// don't allow placement in cells with a unit or obstacle placed there already
+		while(gridCell.className !== ""){
+			gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
 		}
 		
-		for(let property in stats){
-			if(property === "className"){
-				randCell.className = stats[property];
-			}else{
-				randCell.setAttribute(property, stats[property]);
-			}
-		}
-
-		randCell.style.backgroundImage = "url(" + element + ")";
+		let v = convert2dCoordsTo3d(gridCell, this.state.renderer, this.state.camera, this.state.width, this.state.height);
+		object.position.set(v.x, v.y, -450);
 		
-		// enemyUnits need to be pushed into the enemyUnits array
-		if(stats["className"] === "enemy"){
-			this.addToEnemyUnits(randCell);
-			
-		}else if(stats["className"] === "player"){
-			this.addToPlayerUnits(randCell);
+		if(object.side === "enemy"){
+			this.state.enemyUnits[gridCell.id] = object;
+		}else{
+			this.state.playerUnits[gridCell.id] = object;
 		}
+		
+		this.setCellAttributes(gridCell, stats);
 	}
-	
+
 	// place obstacles randomly
 	placeObstacles(leftBound, rightBound, bottomBound, topBound){
 		let randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
@@ -354,8 +340,8 @@ class Game extends React.Component{
 			// light up the paths 
 			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
-				if(elementPaths[key]){
-					elementPaths[key].style.border = "1px solid #dddfff";
+				if(elementPaths[key].className !== "obstacle"){
+					elementPaths[key].style.border = this.pathHighlight;
 				}
 			}
 			currElement.setAttribute('pathlight', 1);
@@ -435,14 +421,7 @@ class Game extends React.Component{
 			return;
 		}
 		
-		let cellDirection;
-		let currUnitsPaths = getPathsDefault(playerUnit);
-		for(let path in currUnitsPaths){
-			if(element.id === currUnitsPaths[path].id){
-				cellDirection = path;
-				break;
-			}
-		}
+		let cellDirection = getMoveDirection(element, playerUnit);
 		
 		/***
 			
@@ -452,98 +431,8 @@ class Game extends React.Component{
 			track direction - see if unit needs to be rotated before moving 
 		
 		***/
-		
 		// if square is highlighted or red (#FF1919) (for ranged units)
-		if(element.style.border === '1px solid rgb(221, 223, 255)' || element.style.border === '1px solid rgb(255, 25, 25)'){
-			
-			// red squares only indicate attack range, not movement, so don't allow movement there 
-			if(element.style.backgroundImage === "" && element.style.border !== '1px solid rgb(255, 25, 25)'){
-			
-				// for ranged units
-				// clear the red highlight
-				if(playerUnit.getAttribute("unitType") === 'range2'){
-					// we can assume the current unit is a ranged attacker
-					// we can't assume what the range is, so the range ought to be another html attribute 
-					let attackRange = getAttackRange(playerUnit, 2);
-
-					for(let path in attackRange){
-						if(attackRange[path]){
-							attackRange[path].style.border = "1px solid #000";
-						}
-					}
-				}
-			
-				// move the unit there
-				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
-				let obj = this.state.playerUnits[playerUnit.id];
-				
-				function move(direction, object, target, setIntervalName){
-					// stop movement if reach target		
-					// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
-					if(direction == "left"){
-						object.position.x -= .2;
-						if(object.position.x <= target.x){
-							clearInterval(setIntervalName);
-						}
-					}else if(direction == "right"){
-						object.position.x += .2;
-						if(object.position.x >= target.x){
-							clearInterval(setIntervalName);
-						}
-					}else if(direction == "top"){
-						object.position.y += .2;
-						if(object.position.y >= target.y){
-							clearInterval(setIntervalName);
-						}
-					}else{
-						object.position.y -= .2;
-						if(object.position.y <= target.y){
-							clearInterval(setIntervalName);
-						}
-					}
-				}
-				
-				let moveFunc = setInterval(
-					function(){
-						move(cellDirection, obj, v, moveFunc);
-					}, 50
-				);
-				
-				element.setAttribute("health", playerUnit.getAttribute("health"));
-				element.setAttribute("attack", playerUnit.getAttribute("attack"));
-				element.setAttribute("unitType", playerUnit.getAttribute("unitType"));
-				
-				// clear old data for currentUnit
-				playerUnit.style.backgroundImage = "";
-				playerUnit.removeAttribute("unitType");
-				playerUnit.removeAttribute("health");
-				playerUnit.removeAttribute("attack");
-				
-				let currUnitPaths = getPathsDefault(playerUnit);
-				for(let key in currUnitPaths){
-					if(currUnitPaths[key]){
-						currUnitPaths[key].style.border = "1px solid #000";
-					}
-				}
-			
-				// update player array 
-				let mesh = this.state.playerUnits[playerUnit.id];
-				//for(let i = 0; i < this.state.playerUnits.length; i++){
-					if(this.state.playerUnits[playerUnit.id]){
-						// replace old cell representing this unit with new cell holding the moved unit
-						//this.updatePlayerUnitsAtIndex(element, i);
-						delete this.state.playerUnits[playerUnit.id];
-						//break;
-					}
-				//}
-				
-				// set currentUnit to new location
-				this.selectPlayerUnit(element);
-				this.state.playerUnits[element.id] = obj;
-				
-				// update playerMoves 
-				this.setPlayerMoves(this.state.playerMoves - 1);
-			}
+		if(element.style.border === this.pathHighlight || element.style.border === this.attackRangeHighlight){
 			
 			// if cell to move in is an enemy unit 
 			if(element.className === "enemy"){
@@ -581,11 +470,12 @@ class Game extends React.Component{
 						element.removeChild(animationCanvas);
 					}, 300);
 					
-					element.classList.remove("enemy");
-					element.style.backgroundImage = "";
-					element.removeAttribute("health");
-					element.removeAttribute("attack");
-					element.removeAttribute("unitType");
+					self.removeCellAttributes(element, self.enemyUnitStats);
+					//element.classList.remove("enemy");
+					//element.style.backgroundImage = "";
+					//element.removeAttribute("health");
+					//element.removeAttribute("attack");
+					//element.removeAttribute("unitType");
 					
 				}else{
 					if(playerUnit.getAttribute("unitType") === 'range2'){
@@ -621,7 +511,70 @@ class Game extends React.Component{
 				this.setPlayerMoves(this.state.playerMoves - 1);
 				
 				this.updateConsole("player attacked!");
-			} // end if enemy 
+				
+			}else if(element.style.border !== this.attackRangeHighlight){
+				// red squares only indicate attack range, not movement, so don't allow movement there
+				// for ranged units
+				// clear the red highlight
+				if(playerUnit.getAttribute("unitType") === 'range2'){
+					// we can assume the current unit is a ranged attacker
+					// we can't assume what the range is, so the range ought to be another html attribute 
+					let attackRange = getAttackRange(playerUnit, 2);
+
+					for(let path in attackRange){
+						if(attackRange[path]){
+							attackRange[path].style.border = "1px solid #000";
+						}
+					}
+				}
+			
+				// move the unit there
+				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
+				let obj = this.state.playerUnits[playerUnit.id];
+
+				let moveFunc = setInterval(
+					function(){
+						move(cellDirection, obj, v, moveFunc);
+					}, 50
+				);
+				
+				element.setAttribute("health", playerUnit.getAttribute("health"));
+				element.setAttribute("attack", playerUnit.getAttribute("attack"));
+				element.setAttribute("unitType", playerUnit.getAttribute("unitType"));
+				element.setAttribute("direction", cellDirection);
+				element.setAttribute("span", 3);
+				
+				// clear old data for currentUnit
+				//playerUnit.style.backgroundImage = "";
+				playerUnit.removeAttribute("unitType");
+				playerUnit.removeAttribute("health");
+				playerUnit.removeAttribute("attack");
+				playerUnit.removeAttribute("direction");
+				playerUnit.removeAttribute("span");
+				
+				let currUnitPaths = getPathsDefault(playerUnit);
+				for(let key in currUnitPaths){
+					if(currUnitPaths[key]){
+						currUnitPaths[key].style.border = "1px solid #000";
+					}
+				}
+			
+				// update player array 
+				let mesh = this.state.playerUnits[playerUnit.id];
+
+				if(this.state.playerUnits[playerUnit.id]){
+					// replace old cell representing this unit with new cell holding the moved unit
+					delete this.state.playerUnits[playerUnit.id];
+				}
+
+				// set currentUnit to new location
+				this.selectPlayerUnit(element);
+				this.state.playerUnits[element.id] = obj;
+				
+				// update playerMoves 
+				this.setPlayerMoves(this.state.playerMoves - 1);
+			}
+			
 		}
 	}
 	
@@ -634,9 +587,9 @@ class Game extends React.Component{
 	******/
 	enemyTurn(enemyAI, searchMethod){
 		let promiseList = []
-		for(let i = 0; i < this.state.enemyUnits.length; i++){
-			// enemyAI function should return a promise 
-			promiseList.push(enemyAI(this.state.enemyUnits[i], this.state, this.selectEnemyUnit, searchMethod));
+		for(let key in this.state.enemyUnits){
+			// enemyAI function should return a promise
+			promiseList.push(enemyAI(document.getElementById(key), this.state, this.selectEnemyUnit, searchMethod));
 		}
 		Promise.all(promiseList).then((results) => {
 			alert('enemy ended turn');
