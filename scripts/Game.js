@@ -7,6 +7,7 @@ import { getPathsDefault,
 		 selectEnemyOut, 
 		 convert2dCoordsTo3d, 
 		 move, 
+		 rotate,
 		 getMoveDirection 
 	  } from './Utils.js';
 import { Deck } from './Deck.js';
@@ -64,7 +65,7 @@ class Game extends React.Component{
 			'loader': new GLTFLoader()
 		};
 		
-		this.pathHighlight = "1px solid rgb(175, 223, 255)";
+		this.pathHighlight = "1px solid rgb(203, 216, 245)"; //rgb(175, 223, 255)
 		this.attackRangeHighlight = "1px solid rgb(255, 25, 25)";
 		
 		this.playerUnitStats = {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss', 'direction': 'left', 'span': 3};
@@ -340,7 +341,7 @@ class Game extends React.Component{
 			// light up the paths 
 			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
-				if(elementPaths[key].className !== "obstacle"){
+				if(elementPaths[key].className === ""){
 					elementPaths[key].style.border = this.pathHighlight;
 				}
 			}
@@ -532,6 +533,21 @@ class Game extends React.Component{
 				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
 				let obj = this.state.playerUnits[playerUnit.id];
 
+				// rotate unit first if they're choosing a cell that's in a direction orthogonal
+				// to their current direction 
+				// get curr direction 
+				// figure out what the direction of the cell to move to is relative to curr direction 
+				// - also need to know if that cell requires a counterclockwise or clockwise rotation
+				// do rotation
+				
+				// if rotation needed, rotate 
+				let rotateFunc = setInterval(
+					function(){
+						rotate("clockwise", obj, 90, rotateFunc);
+					}, 50
+				);
+
+				// gotta use promises
 				let moveFunc = setInterval(
 					function(){
 						move(cellDirection, obj, v, moveFunc);
