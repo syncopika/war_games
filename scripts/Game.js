@@ -9,7 +9,9 @@ import { getPathsDefault,
 		 move, 
 		 rotate,
 		 getMoveRotation,
-		 getMoveDirection 
+		 getMoveDirection,
+		 checkRotation,
+		 moveCellAttributes
 	  } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
@@ -288,7 +290,11 @@ class Game extends React.Component{
 		let gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
 		
 		// don't allow placement in cells with a unit or obstacle placed there already
-		while(gridCell.className !== ""){
+		// check left and right cells of the potential cell to place as well (can't be next to obstacles)
+		// this can be dangerous and lead to infinite loop (there should always be a viable place but random could always return the same numbers...)
+		let left = gridCell.previousSibling;
+		let right = gridCell.nextSibling;
+		while(gridCell.className !== "" || (left && left.className !== "") || (right && right.className !== "")){
 			gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
 		}
 		
@@ -533,20 +539,14 @@ class Game extends React.Component{
 				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
 				let obj = this.state.playerUnits[playerUnit.id];
 
-				// rotate unit first if they're choosing a cell that's in a direction orthogonal
-				// to their current direction 
-				// get curr direction 
-				// figure out what the direction of the cell to move to is relative to curr direction 
-				// - also need to know if that cell requires a counterclockwise or clockwise rotation
-				
 				let currCellDirection = playerUnit.getAttribute("direction");
 				let cellDirectionToGo = getMoveDirection(playerUnit, element);
 				
 				// do we need to rotate 
 				let rotation = getMoveRotation(currCellDirection, cellDirectionToGo);
-				if(rotation){
+				if(rotation && checkRotation(playerUnit, rotation)){
 					// if rotation needed, rotate 
-					let targetAngle = (rotation === "clockwise" ? 90 : -90);
+					let targetAngle = (rotation === "clockwise" ? -90 : 90); // left to right (clckwise) is a reduction in degrees
 					targetAngle += THREE.Math.radToDeg(obj.rotation.y);
 					let rotateFunc = setInterval(
 						function(){
@@ -555,7 +555,6 @@ class Game extends React.Component{
 					);
 				}
 
-				// gotta use promises. the rotation should occur first, then the linear movement.
 				let moveFunc = setInterval(
 					function(){
 						move(cellDirectionToGo, obj, v, moveFunc);
@@ -564,23 +563,24 @@ class Game extends React.Component{
 				
 				// clear old data for currentUnit
 				let currUnitPaths = getPathsDefault(playerUnit);
-				//console.log(currUnitPaths);
 				for(let key in currUnitPaths){
 					currUnitPaths[key].style.border = "1px solid #000";
 				}
 				
-				element.setAttribute("health", playerUnit.getAttribute("health"));
-				element.setAttribute("attack", playerUnit.getAttribute("attack"));
-				element.setAttribute("unitType", playerUnit.getAttribute("unitType"));
-				element.setAttribute("direction", cellDirectionToGo);
-				element.setAttribute("span", 3);
+				moveCellAttributes(playerUnit, element, {
+					"health": playerUnit.getAttribute("health"),
+					"attack": playerUnit.getAttribute("attack"),
+					"unitType": playerUnit.getAttribute("unitType"),
+					"direction": cellDirectionToGo,
+					"span": 3
+				});
 				
 				//playerUnit.style.backgroundImage = "";
-				playerUnit.removeAttribute("unitType");
-				playerUnit.removeAttribute("health");
-				playerUnit.removeAttribute("attack");
-				playerUnit.removeAttribute("direction");
-				playerUnit.removeAttribute("span");
+				//playerUnit.removeAttribute("unitType");
+				//playerUnit.removeAttribute("health");
+				//playerUnit.removeAttribute("attack");
+				//playerUnit.removeAttribute("direction");
+				//playerUnit.removeAttribute("span");
 				playerUnit.className = "";
 				playerUnit.setAttribute("pathlight", 0);
 			

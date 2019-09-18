@@ -18,6 +18,14 @@ function convert2dCoordsTo3d(elementClicked, rendererObj, camera, containerWidth
 	return v;
 }
 
+function moveCellAttributes(source, dest, attributes){
+	for(let attr in attributes){
+		dest.setAttribute(attr, attributes[attr]);
+		source.removeAttribute(attr);
+	}
+}
+
+
 function getLeftCell(cell){
 	try{
 		let left = cell.previousSibling;
@@ -67,11 +75,17 @@ function checkRotation(currCell, direction){
 	if(direction === "clockwise"){
 		let topRight = topCell.nextSibling;
 		let bottomLeft = bottomCell.previousSibling;
+		if(!topRight || ! bottomLeft){
+			return false;
+		}
 		return topRight.className === "" && bottomLeft.className === "";
 	}else{
 		// counterclockwise
 		let topLeft = topCell.previousSibling;
-		let bottomRight = bottomCell(currCell).nextSibling;
+		let bottomRight = bottomCell.nextSibling;
+		if(!topLeft || !bottomRight){
+			return false;
+		}
 		return topLeft.className === "" && bottomRight.className === "";
 	}
 }
@@ -81,7 +95,7 @@ function checkRotation(currCell, direction){
 function getMoveDirection(current, target){
 	let cellDirection;
 	let currUnitPaths = getPathsDefault(current);
-	console.log(currUnitPaths)
+	//console.log(currUnitPaths)
 	for(let path in currUnitPaths){
 		if(target.id === currUnitPaths[path].id){
 			cellDirection = path;
@@ -93,17 +107,30 @@ function getMoveDirection(current, target){
 
 function getMoveRotation(currDirection, moveDirection){
 	let direction = null;
-	if(currDirection === "top" || currDirection === "bottom"){
+	if(currDirection === "top"){
 		if(moveDirection === "right"){
 			direction = "clockwise";
 		}else if(moveDirection === "left"){
 			direction = "counterclockwise";
 		}
-	}else if(currDirection === "left" || currDirection === "right"){
+	}else if(currDirection === "left"){
 		if(moveDirection === "top"){
-			direction = "clockwise"; // this should be different for left and right
+			direction = "clockwise"; 
 		}else if(moveDirection === "bottom"){
 			direction = "counterclockwise";
+		}
+	}else if(currDirection === "right"){
+		if(moveDirection === "top"){
+			direction = "counterclockwise";
+		}else if(moveDirection === "bottom"){
+			direction = "clockwise";
+		}
+	}else{
+		// currDirection === "bottom"
+		if(moveDirection === "right"){
+			direction = "counterclockwise";
+		}else if(moveDirection === "left"){
+			direction = "clockwise";
 		}
 	}
 	return direction;
@@ -114,14 +141,14 @@ function rotate(direction, object, targetAngle, setIntervalName){
 	if(direction === "clockwise"){
 		// only rotate 90 degrees
 		// BUT WHAT ABOUT ROTATING LEFT TO RIGHT AT 180 DEGREES!!!??
-		object.rotation.y += 0.03;
+		object.rotation.y -= 0.03;
 		//console.log(THREE.Math.radToDeg(object.rotation.y));
-		if(THREE.Math.radToDeg(object.rotation.y) >= targetAngle){
+		if(THREE.Math.radToDeg(object.rotation.y) <= targetAngle){
 			clearInterval(setIntervalName);
 		}
 	}else{
-		object.rotation.y -= 0.03;
-		if(THREE.Math.radToDeg(object.rotation.y) <= targetAngle){
+		object.rotation.y += 0.03;
+		if(THREE.Math.radToDeg(object.rotation.y) >= targetAngle){
 			clearInterval(setIntervalName);
 		}
 	}
@@ -339,5 +366,7 @@ export {
 	move,
 	rotate,
 	getMoveDirection,
-	getMoveRotation
+	getMoveRotation,
+	checkRotation,
+	moveCellAttributes
 };
