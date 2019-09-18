@@ -8,6 +8,7 @@ import { getPathsDefault,
 		 convert2dCoordsTo3d, 
 		 move, 
 		 rotate,
+		 getMoveRotation,
 		 getMoveDirection 
 	  } from './Utils.js';
 import { Deck } from './Deck.js';
@@ -422,7 +423,6 @@ class Game extends React.Component{
 			return;
 		}
 		
-		let cellDirection = getMoveDirection(element, playerUnit);
 		
 		/***
 			
@@ -538,45 +538,54 @@ class Game extends React.Component{
 				// get curr direction 
 				// figure out what the direction of the cell to move to is relative to curr direction 
 				// - also need to know if that cell requires a counterclockwise or clockwise rotation
-				// do rotation
 				
-				// if rotation needed, rotate 
-				let rotateFunc = setInterval(
-					function(){
-						rotate("clockwise", obj, 90, rotateFunc);
-					}, 50
-				);
+				let currCellDirection = playerUnit.getAttribute("direction");
+				let cellDirectionToGo = getMoveDirection(playerUnit, element);
+				
+				// do we need to rotate 
+				let rotation = getMoveRotation(currCellDirection, cellDirectionToGo);
+				if(rotation){
+					// if rotation needed, rotate 
+					let targetAngle = (rotation === "clockwise" ? 90 : -90);
+					targetAngle += THREE.Math.radToDeg(obj.rotation.y);
+					let rotateFunc = setInterval(
+						function(){
+							rotate(rotation, obj, targetAngle, rotateFunc);
+						}, 50
+					);
+				}
 
-				// gotta use promises
+				// gotta use promises. the rotation should occur first, then the linear movement.
 				let moveFunc = setInterval(
 					function(){
-						move(cellDirection, obj, v, moveFunc);
+						move(cellDirectionToGo, obj, v, moveFunc);
 					}, 50
 				);
+				
+				// clear old data for currentUnit
+				let currUnitPaths = getPathsDefault(playerUnit);
+				//console.log(currUnitPaths);
+				for(let key in currUnitPaths){
+					currUnitPaths[key].style.border = "1px solid #000";
+				}
 				
 				element.setAttribute("health", playerUnit.getAttribute("health"));
 				element.setAttribute("attack", playerUnit.getAttribute("attack"));
 				element.setAttribute("unitType", playerUnit.getAttribute("unitType"));
-				element.setAttribute("direction", cellDirection);
+				element.setAttribute("direction", cellDirectionToGo);
 				element.setAttribute("span", 3);
 				
-				// clear old data for currentUnit
 				//playerUnit.style.backgroundImage = "";
 				playerUnit.removeAttribute("unitType");
 				playerUnit.removeAttribute("health");
 				playerUnit.removeAttribute("attack");
 				playerUnit.removeAttribute("direction");
 				playerUnit.removeAttribute("span");
-				
-				let currUnitPaths = getPathsDefault(playerUnit);
-				for(let key in currUnitPaths){
-					if(currUnitPaths[key]){
-						currUnitPaths[key].style.border = "1px solid #000";
-					}
-				}
+				playerUnit.className = "";
+				playerUnit.setAttribute("pathlight", 0);
 			
 				// update player array 
-				let mesh = this.state.playerUnits[playerUnit.id];
+				//let mesh = this.state.playerUnits[playerUnit.id];
 
 				if(this.state.playerUnits[playerUnit.id]){
 					// replace old cell representing this unit with new cell holding the moved unit

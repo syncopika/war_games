@@ -37,9 +37,9 @@ function getRightCell(cell){
 }
 
 function getTopCell(cell){
-	let cellId = cell.id.match(/\d+/g); // get the row and column nums 
-	let topCellId = "row" + (cellId[0] - 1) + "column" + cellId[1];
 	try{
+		let cellId = cell.id.match(/\d+/g); // get the row and column nums 
+		let topCellId = "row" + (parseInt(cellId[0]) - 1) + "column" + cellId[1];
 		let topCell = document.getElementById(topCellId);
 		return (topCell.className === "" ? topCell : null);
 	}catch(error){
@@ -48,9 +48,9 @@ function getTopCell(cell){
 }
 
 function getBottomCell(cell){
-	let cellId = cell.id.match(/\d+/g); // get the row and column nums 
-	let bottomCellId = "row" + (parseInt(cellId[0]) + 1) + "column" + cellId[1];
 	try{
+		let cellId = cell.id.match(/\d+/g); // get the row and column nums 
+		let bottomCellId = "row" + (parseInt(cellId[0]) + 1) + "column" + cellId[1];
 		let bottomCell = document.getElementById(bottomCellId);
 		return (bottomCell.className === "" ? bottomCell : null);
 	}catch(error){
@@ -78,11 +78,12 @@ function checkRotation(currCell, direction){
 
 // target = dom element of grid cell to go to 
 // current = dom element currently in 
-function getMoveDirection(target, current){
+function getMoveDirection(current, target){
 	let cellDirection;
-	let currUnitsPaths = getPathsDefault(current);
-	for(let path in currUnitsPaths){
-		if(target.id === currUnitsPaths[path].id){
+	let currUnitPaths = getPathsDefault(current);
+	console.log(currUnitPaths)
+	for(let path in currUnitPaths){
+		if(target.id === currUnitPaths[path].id){
 			cellDirection = path;
 			break;
 		}
@@ -90,15 +91,39 @@ function getMoveDirection(target, current){
 	return cellDirection;
 }
 
+function getMoveRotation(currDirection, moveDirection){
+	let direction = null;
+	if(currDirection === "top" || currDirection === "bottom"){
+		if(moveDirection === "right"){
+			direction = "clockwise";
+		}else if(moveDirection === "left"){
+			direction = "counterclockwise";
+		}
+	}else if(currDirection === "left" || currDirection === "right"){
+		if(moveDirection === "top"){
+			direction = "clockwise"; // this should be different for left and right
+		}else if(moveDirection === "bottom"){
+			direction = "counterclockwise";
+		}
+	}
+	return direction;
+}
+
+
 function rotate(direction, object, targetAngle, setIntervalName){
 	if(direction === "clockwise"){
 		// only rotate 90 degrees
 		// BUT WHAT ABOUT ROTATING LEFT TO RIGHT AT 180 DEGREES!!!??
 		object.rotation.y += 0.03;
-		if(THREE.Math.radToDeg(object.rotation.y) <= targetAngle){
+		//console.log(THREE.Math.radToDeg(object.rotation.y));
+		if(THREE.Math.radToDeg(object.rotation.y) >= targetAngle){
 			clearInterval(setIntervalName);
 		}
 	}else{
+		object.rotation.y -= 0.03;
+		if(THREE.Math.radToDeg(object.rotation.y) <= targetAngle){
+			clearInterval(setIntervalName);
+		}
 	}
 }
 
@@ -145,10 +170,6 @@ function getPathsDefault(element){
 	let paths = {};
 	let span = element.getAttribute("span"); // how many cells does this unit span 
 	let direction = element.getAttribute("direction");
-	let column = parseInt(element.id.match(/\d+/g)[1]);
-	let prevRowParent = element.parentNode.previousSibling;
-	let nextRowParent = element.parentNode.nextSibling.childNodes;
-	let nums = element.id.match(/\d+/g);
 	
 	if(span == 3){
 		if(direction === "left" || direction === "right"){
@@ -167,26 +188,8 @@ function getPathsDefault(element){
 		// bottom coord is row + 1, same column num
 		// left coord is column num - 1, same row 
 		// right coord is column num + 1, same row 
-		if(prevRowParent){	
-			let previousRow = element.parentNode.previousSibling.childNodes;
-			for(let i = 0; i < previousRow.length; i++){
-				if(previousRow[i].id.match(/\d+/g)[1] == column){
-					paths['top'] = previousRow[i];
-					break;
-				}
-			}
-		}
-		
-		if(nextRowParent){
-			let nextRow = element.parentNode.nextSibling.childNodes;
-			for(let i = 0; i < nextRow.length; i++){
-				if(nextRow[i].id.match(/\d+/g)[1] == column){
-					paths['bottom'] = nextRow[i];
-					break;
-				}
-			}
-		}
-		
+		paths['top'] = getTopCell(element);
+		paths['bottom'] = getBottomCell(element);
 		paths['left'] = element.previousSibling;
 		paths['right'] = element.nextSibling;
 	}
@@ -335,5 +338,6 @@ export {
 	convert2dCoordsTo3d,
 	move,
 	rotate,
-	getMoveDirection
+	getMoveDirection,
+	getMoveRotation
 };
