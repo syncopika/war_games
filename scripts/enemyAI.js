@@ -12,9 +12,14 @@
 import { getPathsDefault, 
          move, 
 		 convert2dCoordsTo3d,
-		 getMoveDirection
+		 getMoveDirection,
+		 rotate,
+		 getMoveRotation,
+		 checkRotation,
+		 moveToDestination
 	   } from './Utils.js';
-
+	   
+import * as THREE from 'three';
 
 
 // regular depth first search using a stack 
@@ -411,48 +416,23 @@ function enemyMovement2(enemyElement, gameState, selectEnemyUnit, searchMethod){
 	
 	// move the current enemy unit to the first element from the path 
 	let newCell = document.getElementById(path[0]);
-	newCell.setAttribute('health', enemyElement.getAttribute('health'));
-	newCell.setAttribute('attack', enemyElement.getAttribute('attack'));
-	newCell.setAttribute('direction', enemyElement.getAttribute('direction'));
-	newCell.setAttribute('span', enemyElement.getAttribute('span'));
+	//newCell.setAttribute('health', enemyElement.getAttribute('health'));
+	//newCell.setAttribute('attack', enemyElement.getAttribute('attack'));
+	//newCell.setAttribute('direction', enemyElement.getAttribute('direction'));
+	//newCell.setAttribute('span', enemyElement.getAttribute('span'));
+	//newCell.setAttribute('unittype', enemyElement.getAttribute('unittype'));
 	newCell.className = "enemy";
-	//newCell.style.backgroundImage = enemyElement.style.backgroundImage;
 	
-	let cellDirection = getMoveDirection(newCell, enemyElement);
+	let currCellDirection = enemyElement.getAttribute("direction");
+	let cellDirectionToGo = getMoveDirection(enemyElement, newCell);
 	let v = convert2dCoordsTo3d(newCell, gameState.renderer, gameState.camera, gameState.width, gameState.height); 
 	let obj = enemyUnits[enemyElement.id];
 
-	let moveFunc = setInterval(
-		function(){
-			move(cellDirection, obj, v, moveFunc);
-		}, 50
-	);
+	moveToDestination(enemyElement, newCell, v, obj, paths);
 
-	enemyUnits[newCell.id] = enemyUnits[enemyElement.id];
+	enemyUnits[newCell.id] = obj;
 	delete enemyUnits[enemyElement.id];
-	
-	/* rotate the unit depending on direction 
-	// need to know current direction facing though
-	let oldCoords = enemyElement.id.match(/\d+/g);
-	let newCoords = newCell.id.match(/\d+/g);
-	
-	// if going up 
-	if(oldCoords[0] > newCoords[0]){
-	}else if(oldCoords[0] < newCoords[0]){
-		// going down 
-	}else if(oldCoords[1] < newCoords[1]){
-		// going right 
-	}else{
-		// going left 
-	}
-	*/
-	
-	enemyElement.classList.remove("enemy");
-	//enemyElement.style.backgroundImage = "";
-	enemyElement.removeAttribute("health");
-	enemyElement.removeAttribute("attack");
-	enemyElement.removeAttribute("direction");
-	enemyElement.removeAttribute("span");
+
 	
 	// if the player had selected an enemy unit to view, and that unit moves over to a new cell,
 	// make sure that's updated

@@ -27,21 +27,11 @@ function moveCellAttributes(source, dest, attributes){
 
 
 function getLeftCell(cell){
-	try{
-		let left = cell.previousSibling;
-		return (left.className === "" ? left : null);
-	}catch(error){
-		return null;
-	}
+	return cell.previousSibling;
 }
 
 function getRightCell(cell){
-	try{
-		let right = cell.nextSibling;
-		return (right.className === "" ? right : null);
-	}catch(error){
-		return null;
-	}
+	return cell.nextSibling;
 }
 
 function getTopCell(cell){
@@ -49,7 +39,7 @@ function getTopCell(cell){
 		let cellId = cell.id.match(/\d+/g); // get the row and column nums 
 		let topCellId = "row" + (parseInt(cellId[0]) - 1) + "column" + cellId[1];
 		let topCell = document.getElementById(topCellId);
-		return (topCell.className === "" ? topCell : null);
+		return topCell;
 	}catch(error){
 		return null;
 	}
@@ -60,7 +50,7 @@ function getBottomCell(cell){
 		let cellId = cell.id.match(/\d+/g); // get the row and column nums 
 		let bottomCellId = "row" + (parseInt(cellId[0]) + 1) + "column" + cellId[1];
 		let bottomCell = document.getElementById(bottomCellId);
-		return (bottomCell.className === "" ? bottomCell : null);
+		return bottomCell;
 	}catch(error){
 		return null;
 	}
@@ -72,15 +62,15 @@ function checkRotation(currCell, direction){
 	let topCell = getTopCell(currCell);
 	let bottomCell = getBottomCell(currCell);
 	
-	if(direction === "clockwise"){
+	if(direction === "counterclockwise"){
 		let topRight = topCell.nextSibling;
 		let bottomLeft = bottomCell.previousSibling;
 		if(!topRight || ! bottomLeft){
 			return false;
 		}
 		return topRight.className === "" && bottomLeft.className === "";
-	}else{
-		// counterclockwise
+	}else if(direction === "clockwise"){
+		// clockwise
 		let topLeft = topCell.previousSibling;
 		let bottomRight = bottomCell.nextSibling;
 		if(!topLeft || !bottomRight){
@@ -88,6 +78,7 @@ function checkRotation(currCell, direction){
 		}
 		return topLeft.className === "" && bottomRight.className === "";
 	}
+	return false;
 }
 
 // target = dom element of grid cell to go to 
@@ -181,6 +172,59 @@ function move(direction, object, target, setIntervalName){
 	}
 }
 
+function moveToDestination(curr, destination, dest3DCoords, obj, currUnitPaths){
+	let currCellDirection = curr.getAttribute("direction");
+	let cellDirectionToGo = getMoveDirection(curr, destination);
+	
+	// do we need to rotate 
+	let rotation = getMoveRotation(currCellDirection, cellDirectionToGo);
+	let canRotate = checkRotation(curr, rotation);
+	if(rotation && canRotate){
+		// if rotation needed, rotate 
+		//console.log(THREE.Math.radToDeg(obj.rotation.y));
+		let targetAngle = (rotation === "clockwise" ? -90 : 90); // left to right (clckwise) is a reduction in degrees
+		targetAngle += THREE.Math.radToDeg(obj.rotation.y);
+		//console.log(targetAngle);
+		let rotateFunc = setInterval(
+			function(){
+				rotate(rotation, obj, targetAngle, rotateFunc);
+			}, 50
+		);
+	}else if(rotation && !canRotate){
+		for(let key in currUnitPaths){
+			currUnitPaths[key].style.border = "1px solid #000";
+		}
+		return; // fix this later. this move just shouldn't be an option for defaultPaths
+	}
+
+	let moveFunc = setInterval(
+		function(){
+			move(cellDirectionToGo, obj, dest3DCoords, moveFunc);
+		}, 50
+	);
+	
+	// clear old data for currentUnit
+	for(let key in currUnitPaths){
+		currUnitPaths[key].style.border = "1px solid #000";
+	}
+	
+	moveCellAttributes(curr, destination, {
+		"health": curr.getAttribute("health"),
+		"attack": curr.getAttribute("attack"),
+		"unitType": curr.getAttribute("unitType"),
+		"direction": cellDirectionToGo,
+		"span": 3
+	});
+	
+	curr.removeAttribute("unittype");
+	curr.className = "";
+	curr.removeAttribute("health");
+	curr.removeAttribute("attack");
+	curr.removeAttribute("direction");
+	curr.removeAttribute("span");
+	curr.setAttribute("pathlight", 0);
+}
+
 /*****
 	default path option
 	get the top, bottom, left, and right cells of clicked-on unit 
@@ -198,6 +242,7 @@ function getPathsDefault(element){
 	let span = element.getAttribute("span"); // how many cells does this unit span 
 	let direction = element.getAttribute("direction");
 	
+	/*
 	if(span == 3){
 		if(direction === "left" || direction === "right"){
 			paths['top'] = getTopCell(element);
@@ -210,23 +255,24 @@ function getPathsDefault(element){
 			paths['left'] = getLeftCell(element);
 			paths['right'] = getRightCell(element);		
 		}
-	}else{	
+	}else{
+	*/
 		// top coordinate is row - 1, same column num
 		// bottom coord is row + 1, same column num
 		// left coord is column num - 1, same row 
 		// right coord is column num + 1, same row 
 		paths['top'] = getTopCell(element);
 		paths['bottom'] = getBottomCell(element);
-		paths['left'] = element.previousSibling;
-		paths['right'] = element.nextSibling;
-	}
+		paths['left'] = getLeftCell(element);
+		paths['right'] = getRightCell(element);
+	//}
 
 	for(let path in paths){
 		if(paths[path] === null){
 			delete paths[path];
 		}
 	}
-	
+	//console.log(paths);
 	return paths;
 }
 
@@ -368,5 +414,6 @@ export {
 	getMoveDirection,
 	getMoveRotation,
 	checkRotation,
-	moveCellAttributes
+	moveCellAttributes,
+	moveToDestination
 };

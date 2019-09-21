@@ -11,7 +11,8 @@ import { getPathsDefault,
 		 getMoveRotation,
 		 getMoveDirection,
 		 checkRotation,
-		 moveCellAttributes
+		 moveCellAttributes,
+		 moveToDestination
 	  } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
@@ -58,7 +59,7 @@ class Game extends React.Component{
 			'consoleMsgs': [],
 			'enemyScore': 0,
 			'playerScore': 0,
-			'playerMoves': 1,
+			'playerMoves': 100,
 			'currentEnemyUnit': null, // for displaying info of the current enemy selected
 			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
 			'playerTurn': true, // boolean indicating if player's turn or not
@@ -71,8 +72,8 @@ class Game extends React.Component{
 		this.pathHighlight = "1px solid rgb(203, 216, 245)"; //rgb(175, 223, 255)
 		this.attackRangeHighlight = "1px solid rgb(255, 25, 25)";
 		
-		this.playerUnitStats = {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss', 'direction': 'left', 'span': 3};
-		this.enemyUnitStats = {'health': 100, 'attack': 20, 'className': 'enemy', 'unitType': 'boss', 'direction': 'right', 'span': 3};
+		this.playerUnitStats = {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'range2', 'direction': 'left', 'span': 3};
+		this.enemyUnitStats = {'health': 100, 'attack': 20, 'className': 'enemy', 'unitType': 'range2', 'direction': 'right', 'span': 3};
 		
 		// methods for binding to pass to child components 
 		this.drawCards = this.drawCards.bind(this);
@@ -119,7 +120,7 @@ class Game extends React.Component{
 
 		// place obstacles
 		for(let i = 0; i < 10; i++){
-			self.placeObstacles(0, self.state.numCols, 0, self.state.numRows);
+			self.placeObstacles(0, self.state.numCols-1, 0, self.state.numRows-1);
 		}
 		
 		const WIDTH = self.state.width; //1400;
@@ -164,10 +165,10 @@ class Game extends React.Component{
 		Promise.all(loadedModels).then((objects) => {
 			objects.forEach((obj) => {
 				if(obj.side === "enemy"){
-					self.placeObject(3, self.state.numRows - 3, 2, Math.floor(self.state.numCols/2), obj, this.enemyUnitStats);
+					self.placeObject(3, self.state.numRows - 2, 2, Math.floor(self.state.numCols/2), obj, this.enemyUnitStats);
 					scene.add(obj);
 				}else{
-					self.placeObject(3, self.state.numRows - 3, Math.floor(self.state.numCols/2) + 1, self.state.numCols - 2, obj, this.playerUnitStats);
+					self.placeObject(3, self.state.numRows - 2, Math.floor(self.state.numCols/2) + 1, self.state.numCols - 2, obj, this.playerUnitStats);
 					scene.add(obj);
 				}
 			});
@@ -294,8 +295,18 @@ class Game extends React.Component{
 		// this can be dangerous and lead to infinite loop (there should always be a viable place but random could always return the same numbers...)
 		let left = gridCell.previousSibling;
 		let right = gridCell.nextSibling;
-		while(gridCell.className !== "" || (left && left.className !== "") || (right && right.className !== "")){
+		let retries = 0;
+		
+		// only have to worry about possibly placing where obstacles are 
+		while(retries < 5 && (gridCell.className === "obstacle" || (left.className === "obstacle") || (right.className === "obstacle"))){
 			gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
+			console.log("retry: " + retries + ", " + gridCell.id);
+			retries++;
+		}
+		
+		// to prevent an infinite loop :/
+		if(retries >= 5){
+			gridCell = document.getElementById('row'+startRow+'column'+startCol);
 		}
 		
 		let v = convert2dCoordsTo3d(gridCell, this.state.renderer, this.state.camera, this.state.width, this.state.height);
@@ -312,14 +323,11 @@ class Game extends React.Component{
 
 	// place obstacles randomly
 	placeObstacles(leftBound, rightBound, bottomBound, topBound){
-		let randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
-		let randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
-		let randCell = getCell(randomRow, randomCol);
+
+		let randCell = this.getRandomCell(topBound, bottomBound, leftBound, rightBound);
 		
-		while(randCell.style.backgroundImage !== ""){
-			randomCol = Math.floor(Math.random() * (rightBound - leftBound - 1) + leftBound);
-			randomRow = Math.floor(Math.random() * (topBound - bottomBound - 1) + bottomBound);
-			randCell = getCell(randomRow, randomCol);
+		while(randCell.className !== ""){
+			randCell = this.getRandomCell(topBound, bottomBound, leftBound, rightBound)
 		}
 		
 		randCell.style.backgroundColor = "#000";
@@ -429,6 +437,8 @@ class Game extends React.Component{
 			return;
 		}
 		
+		let currUnitPaths = getPathsDefault(playerUnit);
+		
 		
 		/***
 			
@@ -443,6 +453,8 @@ class Game extends React.Component{
 			
 			// if cell to move in is an enemy unit 
 			if(element.className === "enemy"){
+				
+				console.log("supposed to attack!");
 				
 				let animationCanvas = document.createElement('canvas');
 				
@@ -478,11 +490,6 @@ class Game extends React.Component{
 					}, 300);
 					
 					self.removeCellAttributes(element, self.enemyUnitStats);
-					//element.classList.remove("enemy");
-					//element.style.backgroundImage = "";
-					//element.removeAttribute("health");
-					//element.removeAttribute("attack");
-					//element.removeAttribute("unitType");
 					
 				}else{
 					if(playerUnit.getAttribute("unitType") === 'range2'){
@@ -516,7 +523,6 @@ class Game extends React.Component{
 				}
 				// update playerMoves 
 				this.setPlayerMoves(this.state.playerMoves - 1);
-				
 				this.updateConsole("player attacked!");
 				
 			}else if(element.style.border !== this.attackRangeHighlight){
@@ -538,54 +544,8 @@ class Game extends React.Component{
 				// move the unit there
 				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
 				let obj = this.state.playerUnits[playerUnit.id];
-
-				let currCellDirection = playerUnit.getAttribute("direction");
-				let cellDirectionToGo = getMoveDirection(playerUnit, element);
 				
-				// do we need to rotate 
-				let rotation = getMoveRotation(currCellDirection, cellDirectionToGo);
-				if(rotation && checkRotation(playerUnit, rotation)){
-					// if rotation needed, rotate 
-					let targetAngle = (rotation === "clockwise" ? -90 : 90); // left to right (clckwise) is a reduction in degrees
-					targetAngle += THREE.Math.radToDeg(obj.rotation.y);
-					let rotateFunc = setInterval(
-						function(){
-							rotate(rotation, obj, targetAngle, rotateFunc);
-						}, 50
-					);
-				}
-
-				let moveFunc = setInterval(
-					function(){
-						move(cellDirectionToGo, obj, v, moveFunc);
-					}, 50
-				);
-				
-				// clear old data for currentUnit
-				let currUnitPaths = getPathsDefault(playerUnit);
-				for(let key in currUnitPaths){
-					currUnitPaths[key].style.border = "1px solid #000";
-				}
-				
-				moveCellAttributes(playerUnit, element, {
-					"health": playerUnit.getAttribute("health"),
-					"attack": playerUnit.getAttribute("attack"),
-					"unitType": playerUnit.getAttribute("unitType"),
-					"direction": cellDirectionToGo,
-					"span": 3
-				});
-				
-				//playerUnit.style.backgroundImage = "";
-				//playerUnit.removeAttribute("unitType");
-				//playerUnit.removeAttribute("health");
-				//playerUnit.removeAttribute("attack");
-				//playerUnit.removeAttribute("direction");
-				//playerUnit.removeAttribute("span");
-				playerUnit.className = "";
-				playerUnit.setAttribute("pathlight", 0);
-			
-				// update player array 
-				//let mesh = this.state.playerUnits[playerUnit.id];
+				moveToDestination(playerUnit, element, v, obj, currUnitPaths);
 
 				if(this.state.playerUnits[playerUnit.id]){
 					// replace old cell representing this unit with new cell holding the moved unit
