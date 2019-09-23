@@ -69,11 +69,11 @@ class Game extends React.Component{
 			'loader': new GLTFLoader()
 		};
 		
-		this.pathHighlight = "1px solid rgb(203, 216, 245)"; //rgb(175, 223, 255)
+		this.pathHighlight = "1px solid rgb(203, 216, 245)";
 		this.attackRangeHighlight = "1px solid rgb(255, 25, 25)";
 		
-		this.playerUnitStats = {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'range2', 'direction': 'left', 'span': 3};
-		this.enemyUnitStats = {'health': 100, 'attack': 20, 'className': 'enemy', 'unitType': 'range2', 'direction': 'right', 'span': 3};
+		this.playerUnitStats = {'health': 50, 'attack': 20, 'className': 'player', 'unitType': 'range2', 'direction': 'left', 'span': 3, 'bgImage': 'assets/battleship-edit.png'};
+		this.enemyUnitStats = {'health': 50, 'attack': 20, 'className': 'enemy', 'unitType': 'range2', 'direction': 'right', 'span': 3, 'bgImage': 'assets/battleship2-edit.png'};
 		
 		// methods for binding to pass to child components 
 		this.drawCards = this.drawCards.bind(this);
@@ -82,7 +82,6 @@ class Game extends React.Component{
 		this.updateConsole = this.updateConsole.bind(this);
 		this.selectEnemyUnit = this.selectEnemyUnit.bind(this);
 		this.selectPlayerUnit = this.selectPlayerUnit.bind(this);
-		this.updatePlayerUnitsAtIndex = this.updatePlayerUnitsAtIndex.bind(this);
 		this.removeFromEnemyUnits = this.removeFromEnemyUnits.bind(this);
 		this.addToEnemyUnits = this.addToEnemyUnits.bind(this);
 		this.addToPlayerUnits = this.addToPlayerUnits.bind(this);
@@ -349,12 +348,12 @@ class Game extends React.Component{
 		}
 		
 		// also can only move if it's the player's turn 
+		let elementPaths = getPathsDefault(currElement);
 		
 		// what kind of unit is it?
 		// double equals cause pathlight value might be a string (so need looser comparison) 
 		if(currElement.getAttribute('pathlight') == 0){
 			// light up the paths 
-			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
 				if(elementPaths[key].className === ""){
 					elementPaths[key].style.border = this.pathHighlight;
@@ -367,7 +366,10 @@ class Game extends React.Component{
 			if(currElement.getAttribute("unitType") === 'range2'){
 				let attackRange = getAttackRange(currElement, 2);
 				for(let path in attackRange){
-					if(attackRange[path]){
+					if(attackRange[path] && elementPaths[path]){
+						// what if there's an obstacle between this unit and a potential 
+						// cell to attack? since range is 2, if we can move to the next cell in 
+						// the direction given by 'path', then there isn't an obstacle in the way
 						attackRange[path].style.border = "1px solid #FF1919";
 					}
 				}
@@ -375,7 +377,6 @@ class Game extends React.Component{
 			
 		}else if(currElement.getAttribute('pathlight') == 1){
 			// this is deselecting a unit 
-			let elementPaths = getPathsDefault(currElement);
 			for(let key in elementPaths){
 				if(elementPaths[key]){
 					elementPaths[key].style.border = "1px solid #000";
@@ -387,7 +388,7 @@ class Game extends React.Component{
 			if(currElement.getAttribute("unitType") === 'range2'){
 				let attackRange = getAttackRange(currElement, 2);
 				for(let path in attackRange){
-					if(attackRange[path]){
+					if(attackRange[path] && elementPaths[path]){
 						attackRange[path].style.border = "1px solid #000";
 					}
 				}
@@ -439,7 +440,6 @@ class Game extends React.Component{
 		
 		let currUnitPaths = getPathsDefault(playerUnit);
 		
-		
 		/***
 			
 			also need to check enemy units and their locations to see whether the next square over 
@@ -454,11 +454,12 @@ class Game extends React.Component{
 			// if cell to move in is an enemy unit 
 			if(element.className === "enemy"){
 				
-				console.log("supposed to attack!");
+				//console.log("supposed to attack!");
 				
 				let animationCanvas = document.createElement('canvas');
 				
 				// show animation 
+				
 				animationCanvas.width = parseInt(element.style.width);
 				animationCanvas.height = parseInt(element.style.height);
 				animationCanvas.style.zIndex = 1;
@@ -545,19 +546,20 @@ class Game extends React.Component{
 				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
 				let obj = this.state.playerUnits[playerUnit.id];
 				
-				moveToDestination(playerUnit, element, v, obj, currUnitPaths);
+				if(moveToDestination(playerUnit, element, v, obj, currUnitPaths)){
 
-				if(this.state.playerUnits[playerUnit.id]){
-					// replace old cell representing this unit with new cell holding the moved unit
-					delete this.state.playerUnits[playerUnit.id];
+					if(this.state.playerUnits[playerUnit.id]){
+						// replace old cell representing this unit with new cell holding the moved unit
+						delete this.state.playerUnits[playerUnit.id];
+					}
+
+					// set currentUnit to new location
+					this.selectPlayerUnit(element);
+					this.state.playerUnits[element.id] = obj;
+					
+					// update playerMoves 
+					this.setPlayerMoves(this.state.playerMoves - 1);
 				}
-
-				// set currentUnit to new location
-				this.selectPlayerUnit(element);
-				this.state.playerUnits[element.id] = obj;
-				
-				// update playerMoves 
-				this.setPlayerMoves(this.state.playerMoves - 1);
 			}
 			
 		}
@@ -648,13 +650,6 @@ class Game extends React.Component{
 		});
 	}
 	
-	updatePlayerUnitsAtIndex(unitElement, index){
-		this.setState((state) => {
-			let copy = [...state.playerUnits];
-			copy[index] = unitElement;
-			return {'playerUnits': copy};
-		});
-	}
 	
 	removeFromEnemyUnits(unitElement){
 		this.setState((state) => {
@@ -747,7 +742,6 @@ class Game extends React.Component{
 			'updateConsole': this.updateConsole,
 			'selectEnemyUnit': this.selectEnemyUnit,
 			'selectPlayerUnit': this.selectPlayerUnit,
-			'updatePlayerUnitsAtIndex': this.updatePlayerUnitsAtIndex,
 			'removeFromEnemyUnits': this.removeFromEnemyUnits,
 			'addToEnemyUnits': this.addToEnemyUnits,
 			'addToPlayerUnits': this.addToPlayerUnits,

@@ -33,3 +33,11 @@ rotate units properly when they move in a certain direction.
 try to redefine functions in utils.js without hardcoding numbers. 
 
 add 3d ships and integrate webgl!
+
+---- new idea:
+	- use the 3d canvas only and get rid of the grid 
+	- give each unit a radius that represents how much they can move in one turn and area of attack
+	- can draw a circle showing unit's radius using the 3d canvas also 
+	- for the enemy ai, we can approximate circles within the grid and choose paths that way (so like a grid)
+	- for clicking on specific units, keep track of units via a bounding box? i.e. on click, convert 2d units 
+	  to 3d units. store units by coordinates of bounding box, make sure to note the size of the unit?

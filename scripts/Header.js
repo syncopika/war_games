@@ -6,13 +6,6 @@ const Header = (props) => {
 	let currPlayerUnit = props.selectedUnit;
 	let currEnemy = props.selectedEnemy;
 	
-	// pass in e.target.style.backgroundImage
-	function getImageSrc(url){
-		let start = url.indexOf("(") + 2;  // inclusive 
-		let end = url.indexOf(")") - 1;   // not inclusive
-		return url.substring(start, end);
-	}
-
 	return (
 		<div id='header'>
 			<div id='enemyInfo'>
@@ -21,7 +14,7 @@ const Header = (props) => {
 				{
 					(currEnemy === null) ? 
 					(<img id='selectedEnemy' width='200px' height='80px' src='./assets/blank.png' />) :
-					(<img id='selectedEnemy' src={currEnemy.style.backgroundImage ? getImageSrc(currEnemy.style.backgroundImage) : ""} width='200px' height='80px' />)
+					(<img id='selectedEnemy' src={currEnemy.getAttribute('bgImage')} width='200px' height='80px' />)
 				}
 				</span>
 				<h3> enemy health: { 
@@ -32,7 +25,7 @@ const Header = (props) => {
 				</h3>
 				<br />
 				<br />
-				<p> enemies remaining: <span> {props.enemyUnits.length} </span></p>
+				<p> enemies remaining: <span> {Object.keys(props.enemyUnits).length} </span></p>
 			</div>
 			
 			<div id='title'>
@@ -54,7 +47,7 @@ const Header = (props) => {
 				{
 					(currPlayerUnit === null) ? 
 					(<img id='player' width='200px' height='80px' src='./assets/blank.png' />) :
-					(<img id='player' src={getImageSrc(currPlayerUnit.style.backgroundImage)} width='200px' height='80px' />)
+					(<img id='player' src={currPlayerUnit.getAttribute('bgImage')} width='200px' height='80px' />)
 				}
 				</span> 
 				<h3> player health: {
@@ -65,7 +58,7 @@ const Header = (props) => {
 				</h3>
 				<button disabled={!props.playerTurn || props.playerMoves === 0} id='drawCards' onClick={props.drawCards}> draw cards </button>
 				<button disabled={!props.playerTurn} id='endTurn' onClick={props.endPlayerTurn}> end turn </button>
-				<p> player unit count: <span> {props.playerUnits.length} </span></p>
+				<p> player unit count: <span> {Object.keys(props.playerUnits).length} </span></p>
 				<p> player moves remaining: <span> {props.playerMoves} </span></p>
 			</div>
 		</div>

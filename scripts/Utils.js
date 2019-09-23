@@ -133,7 +133,6 @@ function rotate(direction, object, targetAngle, setIntervalName){
 		// only rotate 90 degrees
 		// BUT WHAT ABOUT ROTATING LEFT TO RIGHT AT 180 DEGREES!!!??
 		object.rotation.y -= 0.03;
-		//console.log(THREE.Math.radToDeg(object.rotation.y));
 		if(THREE.Math.radToDeg(object.rotation.y) <= targetAngle){
 			clearInterval(setIntervalName);
 		}
@@ -194,7 +193,7 @@ function moveToDestination(curr, destination, dest3DCoords, obj, currUnitPaths){
 		for(let key in currUnitPaths){
 			currUnitPaths[key].style.border = "1px solid #000";
 		}
-		return; // fix this later. this move just shouldn't be an option for defaultPaths
+		return false; // fix this later. this move just shouldn't be an option for defaultPaths
 	}
 
 	let moveFunc = setInterval(
@@ -213,7 +212,8 @@ function moveToDestination(curr, destination, dest3DCoords, obj, currUnitPaths){
 		"attack": curr.getAttribute("attack"),
 		"unitType": curr.getAttribute("unitType"),
 		"direction": cellDirectionToGo,
-		"span": 3
+		"span": 3,
+		"bgImage": curr.getAttribute("bgImage")
 	});
 	
 	curr.removeAttribute("unittype");
@@ -222,7 +222,10 @@ function moveToDestination(curr, destination, dest3DCoords, obj, currUnitPaths){
 	curr.removeAttribute("attack");
 	curr.removeAttribute("direction");
 	curr.removeAttribute("span");
+	curr.removeAttribute("bgImage");
 	curr.setAttribute("pathlight", 0);
+	
+	return true;
 }
 
 /*****
@@ -241,31 +244,15 @@ function getPathsDefault(element){
 	let paths = {};
 	let span = element.getAttribute("span"); // how many cells does this unit span 
 	let direction = element.getAttribute("direction");
-	
-	/*
-	if(span == 3){
-		if(direction === "left" || direction === "right"){
-			paths['top'] = getTopCell(element);
-			paths['left'] = getLeftCell(getLeftCell(element));
-			paths['right'] = getRightCell(getRightCell(element));
-			paths['bottom'] = getBottomCell(element);
-		}else{
-			paths['top'] = getTopCell(getTopCell(element));
-			paths['bottom'] = getBottomCell(getBottomCell(element));
-			paths['left'] = getLeftCell(element);
-			paths['right'] = getRightCell(element);		
-		}
-	}else{
-	*/
-		// top coordinate is row - 1, same column num
-		// bottom coord is row + 1, same column num
-		// left coord is column num - 1, same row 
-		// right coord is column num + 1, same row 
-		paths['top'] = getTopCell(element);
-		paths['bottom'] = getBottomCell(element);
-		paths['left'] = getLeftCell(element);
-		paths['right'] = getRightCell(element);
-	//}
+
+	// top coordinate is row - 1, same column num
+	// bottom coord is row + 1, same column num
+	// left coord is column num - 1, same row 
+	// right coord is column num + 1, same row 
+	paths['top'] = getTopCell(element);
+	paths['bottom'] = getBottomCell(element);
+	paths['left'] = getLeftCell(element);
+	paths['right'] = getRightCell(element);
 
 	for(let path in paths){
 		if(paths[path] === null){
@@ -339,6 +326,12 @@ function getAttackRange(element, distance){
 		if(newCol === (column + distance)){
 			paths["right"] = currRow[i];
 			break;
+		}
+	}
+	
+	for(let path in paths){
+		if(paths[path] === null){
+			delete paths[path];
 		}
 	}
 	
