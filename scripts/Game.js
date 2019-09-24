@@ -182,7 +182,6 @@ class Game extends React.Component{
 		
 		function update(){		
 			renderer.render(scene, camera);
-			requestAnimationFrame(update);
 			
 			// keep adding to rotation until max is reached. 
 			// if maxed is reached, keep decreasing rotation until min is reached.
@@ -206,6 +205,8 @@ class Game extends React.Component{
 					mesh.rotation.z += 0.002;
 				}
 			});
+			
+			requestAnimationFrame(update);
 		}
 	}
 	
