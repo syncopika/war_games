@@ -116,65 +116,89 @@
 		renderer.setSize(WIDTH, HEIGHT);	
 		container.appendChild(renderer.domElement);
 		
-		function onMouseMove( event ) {
+		function onMouseEvent( event ) {
 			// calculate mouse position in normalized device coordinates
 			// (-1 to +1) for both components
 			event.preventDefault();
- mouse.x = ( ( event.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width ) * 2 - 1;
-    mouse.y = - ( ( event.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height ) * 2 + 1;
+			mouse.x = ( ( event.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width ) * 2 - 1;
+			mouse.y = - ( ( event.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height ) * 2 + 1;
 			//console.log(mouse.x);
 			//console.log(mouse.y);
 			render();
 		}
 		
-		function render(){
+		function raycast(){
 			// update the picking ray with the camera and mouse position
 			raycaster.setFromCamera( mouse, camera );
 			// calculate objects intersecting the picking ray
 			var intersects = raycaster.intersectObjects( scene.children );
 
 			let colors = [0xff0000, 0x00ff00, 0x0000ff];
-			console.log(intersects);
+			//console.log(intersects);
 			for ( var i = 0; i < intersects.length; i++ ) {
-				console.log("hit!");
-				intersects[ i ].object.material.color.set( colors[i % colors.length] );
+				//console.log("hit!");
+				if(intersects[i].object.name === "player"){
+					//console.log("player hit");
+					intersects[ i ].object.material.color.set( colors[i % colors.length] );
+					return intersects[i].object;
+				}else if(intersects[i].object.name === "selectArea"){
+					return intersects[i].object;
+				}
 			}
-			renderer.render( scene, camera );
+			return false;
 		}
 		
 		let showArea = false;
 		renderer.domElement.addEventListener('click', (e) => {
 			let v = convert2dCoordsTo3d(e);
 			console.log(v);
-			if(showArea){
-				hideUnitArea(circle);
-				showArea = false;
-				
-				// point unit in direction and move if possible
-				// step 1: get 3d point clicked on 
-				// step 2: get vector using point clicked on and unit's curr coords 
-				// step 3: given curr unit's curr direction vector, find angle between 
-				//			vector and the vector obtained in step 2.
-				// step 4: rotate curr unit vector x degrees from step 3.
-				let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z - obj.position.z);
-				
-				// get curr unit direction vector 
-				// https://github.com/mrdoob/three.js/issues/1606
-				let matrix = new THREE.Matrix4();
-				matrix.extractRotation( obj.matrix );
-
-				let direction = new THREE.Vector3( 0, 0, 1 );
-				direction.applyMatrix4(matrix);
-
-				//console.log(direction);
-				let currUnitVector = direction; 
-				let angleBetween = currUnitVector.angleTo(vec);
 			
-				console.log(angleBetween);
-				obj.rotateOnAxis(new THREE.Vector3(0,1,0), angleBetween);
-			}else{
-				showUnitArea(circle);
-				showArea = true;
+			mouse.x = ( ( e.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width ) * 2 - 1;
+			mouse.y = - ( ( e.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height ) * 2 + 1;
+			
+			let res = raycast();
+			//console.log(res);
+			if(res){
+				if(showArea && res.name === "player"){
+					hideUnitArea(circle);
+					showArea = false;
+				}else if(showArea && res.name === "selectArea"){
+					// move unit?
+					
+					// point unit in direction and move if possible
+					// step 1: get 3d point clicked on 
+					// step 2: get vector using point clicked on and unit's curr coords 
+					// step 3: given curr unit's curr direction vector, find angle between 
+					//			vector and the vector obtained in step 2.
+					// step 4: rotate curr unit vector x degrees from step 3.
+					let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z - obj.position.z);
+					
+					// get curr unit direction vector 
+					// https://github.com/mrdoob/three.js/issues/1606
+					let matrix = new THREE.Matrix4();
+					matrix.extractRotation( obj.matrix );
+
+					let direction = new THREE.Vector3( 0, 0, 1 );
+					direction.applyMatrix4(matrix);
+
+					//console.log(direction);
+					let currUnitVector = direction; 
+					let angleBetween = currUnitVector.angleTo(vec);
+					
+					//console.log(THREE.Math.radToDeg(angleBetween));
+					// figure out if the angle should be added (clockwise) or subtracted (rotate counterclckwise)
+					// https://stackoverflow.com/questions/16613616/work-out-whether-to-turn-clockwise-or-anticlockwise-from-two-angles
+					let crossproductLength = currUnitVector.cross(vec);
+					//console.log(crossproductLength.z);
+					if(crossproductLength.z > 0){
+						obj.rotateOnAxis(new THREE.Vector3(0,1,0), angleBetween);
+					}else{
+						obj.rotateOnAxis(new THREE.Vector3(0,1,0), -angleBetween);
+					}
+				}else{
+					showUnitArea(circle);
+					showArea = true;
+				}
 			}
 			
 			renderer.render(scene, camera);
@@ -197,6 +221,7 @@
 			objects.forEach((mesh) => {
 				obj = mesh;
 				mesh.position.set(0, 0, -450);
+				mesh.name = "player"; // assign a name to the mesh 
 				scene.add(mesh);
 				mesh.geometry.computeBoundingSphere();
 				boundingSphereRadius = mesh.geometry.boundingSphere.radius;
@@ -207,17 +232,18 @@
 				//circle.position.set(0, 0, -450);
 				//scene.add( circle );
 				
-				geometry = new THREE.CircleGeometry( boundingSphereRadius, 32 );
+				geometry = new THREE.CircleGeometry( 15, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
 				material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 				circle = new THREE.Mesh( geometry, material );
+				circle.name = "selectArea";
 				
 				// try this instead https://threejs.org/docs/#api/en/core/Raycaster
 				// for knowing what unit the mouse is over 
-				playerUnits["unit1"] = {'x': obj.position.x, 'y': obj.position.y}; // every time this unit moves it needs to be updated
+				//playerUnits["unit1"] = {'x': obj.position.x, 'y': obj.position.y}; // every time this unit moves it needs to be updated
 				
-				//renderer.render(scene, camera);
+				renderer.render(scene, camera);
 				
-				window.addEventListener( 'mousemove', onMouseMove, false );
+				//window.addEventListener( 'mousemove', onMouseMove, false );
 				//window.requestAnimationFrame(render);
 			})
 		});
