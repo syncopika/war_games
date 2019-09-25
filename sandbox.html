@@ -20,6 +20,18 @@
 	<script>
 	
 		let loader = new THREE.GLTFLoader();
+		let obj = null;
+		let area = null;
+		let boundingSphereRadius = null;
+		let playerUnits = {};
+		
+		// THREE.CircleGeometry( 15, 32 )
+		let geometry = null; //new THREE.CircleGeometry( boundingSphereRadius, 32 );
+		let material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+		let circle = null;
+		
+		let raycaster = new THREE.Raycaster();
+		let mouse = new THREE.Vector2(-1, -1);
 	
 		function getModel(modelFilePath, side){
 			return new Promise((resolve, reject) => {
@@ -57,10 +69,6 @@
 			});
 		}
 		
-		let geometry = new THREE.CircleGeometry( 15, 32 );
-		let material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-		let circle = new THREE.Mesh( geometry, material );
-		
 		function showUnitArea(circle){
 			circle.position.set(obj.position.x, obj.position.y, -450);
 			scene.add( circle );
@@ -74,7 +82,6 @@
 			let target = renderer.domElement;
 			let box = target.getBoundingClientRect();
 
-			// this assumes elementClicked is a grid cell, whose parent is a row element, whose parent is the grid container (which is what we want)
 			let x1 = evt.clientX - box.left;
 			let y1 = evt.clientY - box.top;
 			let posX = x1 * target.width  / target.clientWidth;
@@ -86,6 +93,7 @@
 			v.z = -450;
 			return v;
 		}
+		
 		
 		const WIDTH = 1400;
 		const HEIGHT = 600;
@@ -108,14 +116,36 @@
 		renderer.setSize(WIDTH, HEIGHT);	
 		container.appendChild(renderer.domElement);
 		
+		function onMouseMove( event ) {
+			// calculate mouse position in normalized device coordinates
+			// (-1 to +1) for both components
+			event.preventDefault();
+ mouse.x = ( ( event.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width ) * 2 - 1;
+    mouse.y = - ( ( event.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height ) * 2 + 1;
+			//console.log(mouse.x);
+			//console.log(mouse.y);
+			render();
+		}
+		
+		function render(){
+			// update the picking ray with the camera and mouse position
+			raycaster.setFromCamera( mouse, camera );
+			// calculate objects intersecting the picking ray
+			var intersects = raycaster.intersectObjects( scene.children );
+
+			let colors = [0xff0000, 0x00ff00, 0x0000ff];
+			console.log(intersects);
+			for ( var i = 0; i < intersects.length; i++ ) {
+				console.log("hit!");
+				intersects[ i ].object.material.color.set( colors[i % colors.length] );
+			}
+			renderer.render( scene, camera );
+		}
+		
 		let showArea = false;
 		renderer.domElement.addEventListener('click', (e) => {
 			let v = convert2dCoordsTo3d(e);
-			//console.log(v);
-			//obj.position.x = v.x;
-			//obj.position.y = v.y;
-			//obj.position.z = v.z;
-			
+			console.log(v);
 			if(showArea){
 				hideUnitArea(circle);
 				showArea = false;
@@ -126,10 +156,18 @@
 				// step 3: given curr unit's curr direction vector, find angle between 
 				//			vector and the vector obtained in step 2.
 				// step 4: rotate curr unit vector x degrees from step 3.
-				let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z-obj.position.z);
-				vec = vec.normalize();
+				let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z - obj.position.z);
 				
-				let currUnitVector = new THREE.Vector3(1, 0, 0); // hardcode for now 
+				// get curr unit direction vector 
+				// https://github.com/mrdoob/three.js/issues/1606
+				let matrix = new THREE.Matrix4();
+				matrix.extractRotation( obj.matrix );
+
+				let direction = new THREE.Vector3( 0, 0, 1 );
+				direction.applyMatrix4(matrix);
+
+				//console.log(direction);
+				let currUnitVector = direction; 
 				let angleBetween = currUnitVector.angleTo(vec);
 			
 				console.log(angleBetween);
@@ -152,8 +190,6 @@
 		spotLight.shadow.camera.fov = 30;
 		scene.add(spotLight);
 		
-		let obj = null;
-		let area = null;
 		let loadedModels = [];
 		loadedModels.push(getModel('../assets/battleship-edit.glb', 'player'));
 		
@@ -162,16 +198,30 @@
 				obj = mesh;
 				mesh.position.set(0, 0, -450);
 				scene.add(mesh);
-				
+				mesh.geometry.computeBoundingSphere();
+				boundingSphereRadius = mesh.geometry.boundingSphere.radius;
+				//console.log(boundingSphereRadius);
 				//var geometry = new THREE.CircleGeometry( 15, 32 );
 				//var material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 				//var circle = new THREE.Mesh( geometry, material );
 				//circle.position.set(0, 0, -450);
 				//scene.add( circle );
-
-				renderer.render(scene, camera);
+				
+				geometry = new THREE.CircleGeometry( boundingSphereRadius, 32 );
+				material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+				circle = new THREE.Mesh( geometry, material );
+				
+				// try this instead https://threejs.org/docs/#api/en/core/Raycaster
+				// for knowing what unit the mouse is over 
+				playerUnits["unit1"] = {'x': obj.position.x, 'y': obj.position.y}; // every time this unit moves it needs to be updated
+				
+				//renderer.render(scene, camera);
+				
+				window.addEventListener( 'mousemove', onMouseMove, false );
+				//window.requestAnimationFrame(render);
 			})
 		});
+		
 		
 
 
