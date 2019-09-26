@@ -148,6 +148,23 @@
 			return false;
 		}
 		
+		function inRange(v1, v2){
+			let limit = 0.1
+			return (v1.x <= v2.x + limit && v1.x >= v2.x - limit && v1.y <= v2.y + limit && v1.y >= v2.y - limit);
+		}
+		
+		function move(object, targetPos, directionVec, setIntervalName){
+			// stop movement if reach target		
+			// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
+			if(inRange(object.position, targetPos)){
+				console.log("reached destination: x: " + object.position.x + ", y: " + object.position.y);
+				clearInterval(setIntervalName);
+			}else{
+				object.position.addScaledVector(directionVec, 0.2);
+			}
+			renderer.render(scene, camera);
+		}
+				
 		let showArea = false;
 		renderer.domElement.addEventListener('click', (e) => {
 			let v = convert2dCoordsTo3d(e);
@@ -181,20 +198,30 @@
 					let direction = new THREE.Vector3( 0, 0, 1 );
 					direction.applyMatrix4(matrix);
 
-					//console.log(direction);
 					let currUnitVector = direction; 
 					let angleBetween = currUnitVector.angleTo(vec);
 					
-					//console.log(THREE.Math.radToDeg(angleBetween));
 					// figure out if the angle should be added (clockwise) or subtracted (rotate counterclckwise)
 					// https://stackoverflow.com/questions/16613616/work-out-whether-to-turn-clockwise-or-anticlockwise-from-two-angles
 					let crossproductLength = currUnitVector.cross(vec);
-					//console.log(crossproductLength.z);
 					if(crossproductLength.z > 0){
 						obj.rotateOnAxis(new THREE.Vector3(0,1,0), angleBetween);
 					}else{
 						obj.rotateOnAxis(new THREE.Vector3(0,1,0), -angleBetween);
 					}
+					
+					// move to point clicked 
+					console.log("curr position: x: " + obj.position.x + ", y: " + obj.position.y);
+					vec.normalize();
+					console.log("destination position: x: " + v.x + ", y: " + v.y);
+					let moveFunc = setInterval(
+							function(){
+								move(obj, v, vec, moveFunc);
+							}, 60
+						);
+					
+					hideUnitArea(circle);
+					showArea = false;
 				}else{
 					showUnitArea(circle);
 					showArea = true;
@@ -232,8 +259,10 @@
 				//circle.position.set(0, 0, -450);
 				//scene.add( circle );
 				
-				geometry = new THREE.CircleGeometry( 15, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
+				geometry = new THREE.CircleGeometry( 17, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
 				material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+				
+				// make one circle for attack range, and m=one for movement range
 				circle = new THREE.Mesh( geometry, material );
 				circle.name = "selectArea";
 				
