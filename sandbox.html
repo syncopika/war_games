@@ -19,28 +19,53 @@
 
 	<script>
 	
+		const WIDTH = 1400;
+		const HEIGHT = 600;
+		const VIEW_ANGLE = 100;
+		const ASPECT = WIDTH / HEIGHT;
+		const NEAR = 1;
+		const FAR = 1000;
+		const LEFT = WIDTH / -10;
+		const RIGHT = WIDTH / 10;
+		const TOP = HEIGHT / 10;
+		const BOTTOM = HEIGHT / -10;
+		
+		const container = document.querySelector('#container');
+		const renderer = new THREE.WebGLRenderer();
+		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);	
+		const scene = new THREE.Scene();
+	
 		let loader = new THREE.GLTFLoader();
 		let obj = null;
 		let area = null;
 		let boundingSphereRadius = null;
 		let playerUnits = {};
 		
-		// THREE.CircleGeometry( 15, 32 )
-		let geometry = null; //new THREE.CircleGeometry( boundingSphereRadius, 32 );
-		let material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-		let circle = null;
+		let currSelectedObj = null;
+		let showArea = false;
+		let spotLight = new THREE.SpotLight( 0xffffff );
+		spotLight.position.set( 0, 0, 1 );
+		spotLight.castShadow = true;
+		spotLight.shadow.mapSize.width = 3000;
+		spotLight.shadow.mapSize.height = 500;
+		spotLight.shadow.camera.near = 10;
+		spotLight.shadow.camera.far = 1000;
+		spotLight.shadow.camera.fov = 30;
+		scene.add(spotLight);
 		
+		let loadedModels = [];
+			
 		let raycaster = new THREE.Raycaster();
 		let mouse = new THREE.Vector2(-1, -1);
 	
-		function getModel(modelFilePath, side){
+		function getModel(modelFilePath, side, name){
 			return new Promise((resolve, reject) => {
 				loader.load(
 					modelFilePath,
 					function(gltf){
 						gltf.scene.traverse((child) => {
 							if(child.type === "Mesh"){
-				
+							
 								let material = child.material;
 								let geometry = child.geometry;
 								let obj = new THREE.Mesh(geometry, material);
@@ -52,6 +77,7 @@
 								obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
 							
 								obj.side = side; // player or enemy mesh?
+								obj.name = name;
 								resolve(obj);
 							}
 						});
@@ -69,9 +95,9 @@
 			});
 		}
 		
-		function showUnitArea(circle){
+		function showUnitArea(obj, circle){
 			circle.position.set(obj.position.x, obj.position.y, -450);
-			scene.add( circle );
+			scene.add(circle);
 		}
 		
 		function hideUnitArea(circle){
@@ -94,161 +120,17 @@
 			return v;
 		}
 		
-		
-		const WIDTH = 1400;
-		const HEIGHT = 600;
-		const VIEW_ANGLE = 100;
-		const ASPECT = WIDTH / HEIGHT;
-		const NEAR = 1;
-		const FAR = 1000;
-		const LEFT = WIDTH / -10;
-		const RIGHT = WIDTH / 10;
-		const TOP = HEIGHT / 10;
-		const BOTTOM = HEIGHT / -10;
-		
-		const container = document.querySelector('#container');
-		const renderer = new THREE.WebGLRenderer();
-		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);	
-		const scene = new THREE.Scene();
-		scene.background = new THREE.Color( 0xffffff );
-		
-		scene.add(camera);
-		renderer.setSize(WIDTH, HEIGHT);	
-		container.appendChild(renderer.domElement);
-		
-		function onMouseEvent( event ) {
-			// calculate mouse position in normalized device coordinates
-			// (-1 to +1) for both components
-			event.preventDefault();
-			mouse.x = ( ( event.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width ) * 2 - 1;
-			mouse.y = - ( ( event.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height ) * 2 + 1;
-			//console.log(mouse.x);
-			//console.log(mouse.y);
-			render();
-		}
-		
-		function raycast(){
-			// update the picking ray with the camera and mouse position
-			raycaster.setFromCamera( mouse, camera );
-			// calculate objects intersecting the picking ray
-			var intersects = raycaster.intersectObjects( scene.children );
 
-			let colors = [0xff0000, 0x00ff00, 0x0000ff];
-			//console.log(intersects);
-			for ( var i = 0; i < intersects.length; i++ ) {
-				//console.log("hit!");
-				if(intersects[i].object.name === "player"){
-					//console.log("player hit");
-					intersects[ i ].object.material.color.set( colors[i % colors.length] );
-					return intersects[i].object;
-				}else if(intersects[i].object.name === "selectArea"){
-					return intersects[i].object;
-				}
-			}
-			return false;
-		}
-		
-		function inRange(v1, v2){
-			let limit = 0.1
-			return (v1.x <= v2.x + limit && v1.x >= v2.x - limit && v1.y <= v2.y + limit && v1.y >= v2.y - limit);
-		}
-		
-		function move(object, targetPos, directionVec, setIntervalName){
-			// stop movement if reach target		
-			// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
-			if(inRange(object.position, targetPos)){
-				console.log("reached destination: x: " + object.position.x + ", y: " + object.position.y);
-				clearInterval(setIntervalName);
-			}else{
-				object.position.addScaledVector(directionVec, 0.2);
-			}
-			renderer.render(scene, camera);
-		}
-				
-		let showArea = false;
-		renderer.domElement.addEventListener('click', (e) => {
-			let v = convert2dCoordsTo3d(e);
-			console.log(v);
-			
-			mouse.x = ( ( e.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width ) * 2 - 1;
-			mouse.y = - ( ( e.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height ) * 2 + 1;
-			
-			let res = raycast();
-			//console.log(res);
-			if(res){
-				if(showArea && res.name === "player"){
-					hideUnitArea(circle);
-					showArea = false;
-				}else if(showArea && res.name === "selectArea"){
-					// move unit?
-					
-					// point unit in direction and move if possible
-					// step 1: get 3d point clicked on 
-					// step 2: get vector using point clicked on and unit's curr coords 
-					// step 3: given curr unit's curr direction vector, find angle between 
-					//			vector and the vector obtained in step 2.
-					// step 4: rotate curr unit vector x degrees from step 3.
-					let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z - obj.position.z);
-					
-					// get curr unit direction vector 
-					// https://github.com/mrdoob/three.js/issues/1606
-					let matrix = new THREE.Matrix4();
-					matrix.extractRotation( obj.matrix );
-
-					let direction = new THREE.Vector3( 0, 0, 1 );
-					direction.applyMatrix4(matrix);
-
-					let currUnitVector = direction; 
-					let angleBetween = currUnitVector.angleTo(vec);
-					
-					// figure out if the angle should be added (clockwise) or subtracted (rotate counterclckwise)
-					// https://stackoverflow.com/questions/16613616/work-out-whether-to-turn-clockwise-or-anticlockwise-from-two-angles
-					let crossproductLength = currUnitVector.cross(vec);
-					if(crossproductLength.z > 0){
-						obj.rotateOnAxis(new THREE.Vector3(0,1,0), angleBetween);
-					}else{
-						obj.rotateOnAxis(new THREE.Vector3(0,1,0), -angleBetween);
-					}
-					
-					// move to point clicked 
-					console.log("curr position: x: " + obj.position.x + ", y: " + obj.position.y);
-					vec.normalize();
-					console.log("destination position: x: " + v.x + ", y: " + v.y);
-					let moveFunc = setInterval(
-							function(){
-								move(obj, v, vec, moveFunc);
-							}, 60
-						);
-					
-					hideUnitArea(circle);
-					showArea = false;
-				}else{
-					showUnitArea(circle);
-					showArea = true;
-				}
-			}
-			
-			renderer.render(scene, camera);
-		});
-		
-		let spotLight = new THREE.SpotLight( 0xffffff );
-		spotLight.position.set( 0, 0, 1 );
-		spotLight.castShadow = true;
-		spotLight.shadow.mapSize.width = 3000;
-		spotLight.shadow.mapSize.height = 500;
-		spotLight.shadow.camera.near = 10;
-		spotLight.shadow.camera.far = 1000;
-		spotLight.shadow.camera.fov = 30;
-		scene.add(spotLight);
-		
-		let loadedModels = [];
-		loadedModels.push(getModel('../assets/battleship-edit.glb', 'player'));
+		loadedModels.push(getModel('../assets/battleship-edit.glb', 'player', 'p1'));
+		loadedModels.push(getModel('../assets/battleship2.glb', 'enemy', 'e1'));
 		
 		Promise.all(loadedModels).then((objects) => {
 			objects.forEach((mesh) => {
-				obj = mesh;
-				mesh.position.set(0, 0, -450);
-				mesh.name = "player"; // assign a name to the mesh 
+				
+				let randX = Math.floor(Math.random() * (30 - (-30) + 1) + (-30));
+				let randY = Math.floor(Math.random() * (60 - (-60) + 1) + (-60));
+				mesh.position.set(randX, randY, -450);
+
 				scene.add(mesh);
 				mesh.geometry.computeBoundingSphere();
 				boundingSphereRadius = mesh.geometry.boundingSphere.radius;
@@ -259,12 +141,15 @@
 				//circle.position.set(0, 0, -450);
 				//scene.add( circle );
 				
-				geometry = new THREE.CircleGeometry( 17, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
-				material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+				if(mesh.side === "player"){
+					let geometry = new THREE.CircleGeometry( 17, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
+					let material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 				
-				// make one circle for attack range, and m=one for movement range
-				circle = new THREE.Mesh( geometry, material );
-				circle.name = "selectArea";
+					// make one circle for attack range, and one for movement range
+					let circle = new THREE.Mesh( geometry, material );
+					circle.name = "selectArea";
+					mesh.selectArea = circle;
+				}
 				
 				// try this instead https://threejs.org/docs/#api/en/core/Raycaster
 				// for knowing what unit the mouse is over 
@@ -276,6 +161,152 @@
 				//window.requestAnimationFrame(render);
 			})
 		});
+		
+
+		scene.background = new THREE.Color( 0xffffff );	
+		scene.add(camera);
+		renderer.setSize(WIDTH, HEIGHT);	
+		container.appendChild(renderer.domElement);
+		
+		function raycast(){
+			// update the picking ray with the camera and mouse position
+			raycaster.setFromCamera( mouse, camera );
+			// calculate objects intersecting the picking ray
+			var intersects = raycaster.intersectObjects( scene.children );
+
+			let colors = [0xff0000, 0x00ff00, 0x0000ff];
+			//console.log(intersects);
+			for(var i = 0; i < intersects.length; i++) {
+				//console.log("hit!");
+				if(intersects[i].object.side === "player"){
+					//console.log("player hit");
+					intersects[ i ].object.material.color.set( colors[i % colors.length] );
+					return intersects[i].object;
+				}else if(intersects[i].object.name === "selectArea"){
+					console.log("clicked on selectarea");
+					return intersects[i].object;
+				}
+			}
+			return false;
+		}
+		
+		function inRange(v1, v2, limit){
+			return (v1.x <= v2.x + limit && v1.x >= v2.x - limit && v1.y <= v2.y + limit && v1.y >= v2.y - limit);
+		}
+		
+		function move(object, targetPos, directionVec, setIntervalName){
+			// stop movement if reach target		
+			// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
+			if(inRange(object.position, targetPos, 0.1)){
+				//console.log("reached destination: x: " + object.position.x + ", y: " + object.position.y);
+				clearInterval(setIntervalName);
+			}else{
+				object.position.addScaledVector(directionVec, 0.2);
+			}
+			renderer.render(scene, camera);
+		}
+		
+		function rotate(object, angle, targetVec, setIntervalName){
+			let limit = 0.02;
+			let angleBetween = getAngleBetween(object, targetVec);
+			if(angleBetween >= -limit && angleBetween <= limit){
+				console.log("finished rotating");
+				clearInterval(setIntervalName);
+			}else{
+				object.rotateOnAxis(new THREE.Vector3(0,1,0), angle);
+			}
+			renderer.render(scene, camera);
+		}
+		
+		function getAngleBetween(obj, vec){
+			let matrix = new THREE.Matrix4();
+			matrix.extractRotation( obj.matrix );
+			let direction = new THREE.Vector3( 0, 0, 1 );
+			direction.applyMatrix4(matrix);
+
+			let currDirectionVector = direction; 
+			let angleBetween = currDirectionVector.angleTo(vec);
+			return angleBetween;
+		}
+						
+		renderer.domElement.addEventListener('click', (e) => {
+			let v = convert2dCoordsTo3d(e);
+			//console.log(v);
+			
+			mouse.x = (( e.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width) * 2 - 1;
+			mouse.y = - (( e.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height) * 2 + 1;
+
+			let res = raycast();
+			//console.log(res);
+			if(res){
+				if(showArea && res.side === "player"){
+					console.log("hide select area");
+					hideUnitArea(res.selectArea);
+					showArea = false;
+					currSelectedObj = null;
+				}else if(showArea && res.name === "selectArea"){
+					// move unit?
+					let obj = currSelectedObj;
+					// point unit in direction and move if possible
+					// step 1: get 3d point clicked on 
+					// step 2: get vector using point clicked on and unit's curr coords 
+					// step 3: given curr unit's curr direction vector, find angle between 
+					//			vector and the vector obtained in step 2.
+					// step 4: rotate curr unit vector x degrees from step 3.
+					let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z - obj.position.z);
+					
+					// get curr unit direction vector 
+					// https://github.com/mrdoob/three.js/issues/1606
+					let angleBetween = getAngleBetween(obj, vec);
+					
+					// figure out if the angle should be added (clockwise) or subtracted (rotate counterclckwise)
+					// https://stackoverflow.com/questions/16613616/work-out-whether-to-turn-clockwise-or-anticlockwise-from-two-angles
+					let matrix = new THREE.Matrix4();
+					matrix.extractRotation( obj.matrix );
+					let direction = new THREE.Vector3( 0, 0, 1 );
+					direction.applyMatrix4(matrix);
+					let currDirectionVector = direction; 
+			
+					let crossProductLength = currDirectionVector.cross(vec);
+					if(crossProductLength.z > 0){
+						// clockwise
+						let rotateFunc = setInterval(
+							function(){
+								rotate(obj, angleBetween / 40, vec, rotateFunc);
+							}, 35
+						);
+					}else{
+						// counterclockwise
+						let rotateFunc = setInterval(
+							function(){
+								rotate(obj, -angleBetween / 40, vec, rotateFunc);
+							}, 35
+						);
+					}
+					
+					// move to point clicked 
+					//console.log("curr position: x: " + obj.position.x + ", y: " + obj.position.y);
+					vec.normalize();
+					//console.log("destination position: x: " + v.x + ", y: " + v.y);
+					let moveFunc = setInterval(
+							function(){
+								move(obj, v, vec, moveFunc);
+							}, 30
+						);
+					
+					hideUnitArea(res);
+					showArea = false;
+				}else{
+					currSelectedObj = res;
+					showUnitArea(res, res.selectArea);
+					showArea = true;
+				}
+			}
+			
+			renderer.render(scene, camera);
+		});
+		
+		
 		
 		
 
