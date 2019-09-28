@@ -4,6 +4,8 @@
 		<title>sndfjklnsfkld</title>
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js'></script>
 		<script src='node_modules\three\examples\js\loaders\GLTFLoader.js'></script>
+		<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 	</head>
 	
 	<style>
@@ -95,6 +97,65 @@
 			});
 		}
 		
+		// https://codepen.io/Xanmia/pen/DoljI
+		var movementSpeed = 10;
+		var totalObjects = 1000;
+		var objectSize = 10;
+		var sizeRandomness = 4000;
+		var colors = [0xFF0FFF, 0xCCFF00, 0xFF000F, 0x996600, 0xFFFFFF];
+		var dirs = [];
+		var parts = [];
+
+		function explodeAnimation(x,y){
+		  var geometry = new THREE.Geometry();
+		  
+		  for (i = 0; i < totalObjects; i++) 
+		  { 
+		  				let randX = Math.floor(Math.random() * (30 - (-30) + 1) + (-30));
+				let randY = Math.floor(Math.random() * (60 - (-60) + 1) + (-60));
+			var vertex = new THREE.Vector3();
+			vertex.x = randX;//x;
+			vertex.y = randY; //y;
+			vertex.z = -450;
+			console.log(vertex);
+		  
+			geometry.vertices.push( vertex );
+			dirs.push({x:(Math.random() * movementSpeed)-(movementSpeed/2),y:(Math.random() * movementSpeed)-(movementSpeed/2),z:(Math.random() * movementSpeed)-(movementSpeed/2)});
+		  }
+		  var material = new THREE.PointsMaterial( { size: objectSize,  color: colors[Math.round(Math.random() * colors.length)] });
+		  var particles = new THREE.Points( geometry, material );
+		  
+		  this.object = particles;
+		  this.status = true;
+		  
+		  		  				let randX = Math.floor(Math.random() * (30 - (-30) + 1) + (-30));
+				let randY = Math.floor(Math.random() * (60 - (-60) + 1) + (-60));
+		  this.xDir = randX;//(Math.random() * movementSpeed)-(movementSpeed/2);
+		  this.yDir = randY;//(Math.random() * movementSpeed)-(movementSpeed/2);
+		  this.zDir = -450; //(Math.random() * movementSpeed)-(movementSpeed/2);
+		  
+		  scene.add(this.object); 
+		  
+		  this.update = function(){
+			if (this.status === true){
+			  var pCount = totalObjects;
+			  while(pCount--) {
+				var particle = this.object.geometry.vertices[pCount];
+				particle.y += dirs[pCount].y;
+				particle.x += dirs[pCount].x;
+				particle.z += dirs[pCount].z;
+			  }
+			  this.object.geometry.verticesNeedUpdate = true;
+			}
+		  }
+		}
+		
+		function attackUnit(target){
+			// particle explosion 
+			parts.push(new explodeAnimation((Math.random() * sizeRandomness)-(sizeRandomness/2), (Math.random() * sizeRandomness)-(sizeRandomness/2)));
+			$('#container').effect("bounce");
+		}
+		
 		function showUnitArea(obj, circle){
 			circle.position.set(obj.position.x, obj.position.y, -450);
 			scene.add(circle);
@@ -135,11 +196,6 @@
 				mesh.geometry.computeBoundingSphere();
 				boundingSphereRadius = mesh.geometry.boundingSphere.radius;
 				//console.log(boundingSphereRadius);
-				//var geometry = new THREE.CircleGeometry( 15, 32 );
-				//var material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-				//var circle = new THREE.Mesh( geometry, material );
-				//circle.position.set(0, 0, -450);
-				//scene.add( circle );
 				
 				let geometry = new THREE.CircleGeometry( 17, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
 				let material;
@@ -233,7 +289,7 @@
 			}else{
 				object.position.addScaledVector(directionVec, 0.2);
 			}
-			renderer.render(scene, camera);
+			//renderer.render(scene, camera);
 		}
 		
 		function rotate(object, angle, targetVec, setIntervalName){
@@ -245,7 +301,7 @@
 			}else{
 				object.rotateOnAxis(new THREE.Vector3(0,1,0), angle);
 			}
-			renderer.render(scene, camera);
+			//renderer.render(scene, camera);
 		}
 		
 		function getAngleBetween(obj, vec){
@@ -331,14 +387,25 @@
 					currSelectedObj = res;
 					showUnitArea(res, res.selectArea);
 					showArea = true;
+				}else if(res.side === "enemy"){
+					attackUnit();
 				}
 			}
 			
-			renderer.render(scene, camera);
+			//renderer.render(scene, camera);
 		});
 		
 		
-		
+		function render() {
+			requestAnimationFrame( render );
+			 
+			var pCount = parts.length;
+			  while(pCount--) {
+				parts[pCount].update();
+			  }
+			renderer.render(scene, camera);
+		}
+		render();
 		
 
 
