@@ -141,14 +141,24 @@
 				//circle.position.set(0, 0, -450);
 				//scene.add( circle );
 				
+				let geometry = new THREE.CircleGeometry( 17, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
+				let material;
 				if(mesh.side === "player"){
-					let geometry = new THREE.CircleGeometry( 17, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
-					let material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-				
-					// make one circle for attack range, and one for movement range
-					let circle = new THREE.Mesh( geometry, material );
-					circle.name = "selectArea";
-					mesh.selectArea = circle;
+					material = new THREE.MeshBasicMaterial({color: 0xffff00});
+				}else if(mesh.side === "enemy"){
+					material = new THREE.MeshBasicMaterial({ color: 0x0000ff } ); // default is 0xffffff, fyi. you want transparent
+				}
+				// make one circle for attack range, and one for movement range
+				let circle = new THREE.Mesh( geometry, material );
+				circle.name = "selectArea";
+			
+				mesh.selectArea = circle;
+				if(mesh.side === "enemy"){
+					circle.position.set(mesh.position.x, mesh.position.y, mesh.position.z);
+					scene.add(circle);
+					circle.side = "enemyArea";
+				}else{
+					circle.side = "playerArea";
 				}
 				
 				// try this instead https://threejs.org/docs/#api/en/core/Raycaster
@@ -174,19 +184,39 @@
 			// calculate objects intersecting the picking ray
 			var intersects = raycaster.intersectObjects( scene.children );
 
+			// check if multiple hits! i.e. if player unit's area and enemy area overlap
+			// see if current unit's selectArea and an enemy's selectArea intersect
+			// if so, can't move 
+			intersectCheck = {};
+			intersects.forEach((obj) => {
+				if(obj.object.name === "selectArea" && (obj.object.side === "enemyArea" || obj.object.side === "playerArea")){
+					intersectCheck[obj.object.side] = 1;
+				}
+			});
+			if(intersectCheck["enemyArea"] && intersectCheck["playerArea"]){
+				console.log("can't move - this point is an intersection with an enemy. try attacking?");
+				return false;
+			}
+
 			let colors = [0xff0000, 0x00ff00, 0x0000ff];
 			//console.log(intersects);
 			for(var i = 0; i < intersects.length; i++) {
 				//console.log("hit!");
 				if(intersects[i].object.side === "player"){
 					//console.log("player hit");
-					intersects[ i ].object.material.color.set( colors[i % colors.length] );
+					intersects[i].object.material.color.set( colors[i % colors.length] );
 					return intersects[i].object;
 				}else if(intersects[i].object.name === "selectArea"){
 					console.log("clicked on selectarea");
 					return intersects[i].object;
+				}else if(intersects[i].object.side === "enemy" && currSelectedObj){
+					// need to make sure target is within range also!!
+					console.log("attacking enemy");
+					return intersects[i].object;
 				}
 			}
+			
+			
 			return false;
 		}
 		
@@ -244,7 +274,8 @@
 					hideUnitArea(res.selectArea);
 					showArea = false;
 					currSelectedObj = null;
-				}else if(showArea && res.name === "selectArea"){
+				}else if(showArea && res.name === "selectArea" && currSelectedObj.side === "player"){
+					console.log("moving");
 					// move unit?
 					let obj = currSelectedObj;
 					// point unit in direction and move if possible
@@ -262,7 +293,7 @@
 					// figure out if the angle should be added (clockwise) or subtracted (rotate counterclckwise)
 					// https://stackoverflow.com/questions/16613616/work-out-whether-to-turn-clockwise-or-anticlockwise-from-two-angles
 					let matrix = new THREE.Matrix4();
-					matrix.extractRotation( obj.matrix );
+					matrix.extractRotation(obj.matrix);
 					let direction = new THREE.Vector3( 0, 0, 1 );
 					direction.applyMatrix4(matrix);
 					let currDirectionVector = direction; 
@@ -296,7 +327,7 @@
 					
 					hideUnitArea(res);
 					showArea = false;
-				}else{
+				}else if(res.side === "player"){
 					currSelectedObj = res;
 					showUnitArea(res, res.selectArea);
 					showArea = true;
