@@ -98,38 +98,35 @@
 		}
 		
 		// https://codepen.io/Xanmia/pen/DoljI
-		var movementSpeed = 10;
-		var totalObjects = 1000;
-		var objectSize = 10;
-		var sizeRandomness = 4000;
-		var colors = [0xFF0FFF, 0xCCFF00, 0xFF000F, 0x996600, 0xFFFFFF];
-		var dirs = [];
-		var parts = [];
+		let movementSpeed = 20;
+		let totalObjects = 50;
+		let objectSize = 10;
+		let sizeRandomness = 4000;
+		let colors = [0xff0000];//, 0xCCFF00, 0xFF000F, 0x996600, 0xFFFFFF];
+		let dirs = [];
+		let parts = [];
 
-		function explodeAnimation(x,y){
+		function explodeAnimation(x, y, target){
 		  var geometry = new THREE.Geometry();
 		  
-		  for (i = 0; i < totalObjects; i++) 
-		  { 
-		  				let randX = Math.floor(Math.random() * (30 - (-30) + 1) + (-30));
-				let randY = Math.floor(Math.random() * (60 - (-60) + 1) + (-60));
-			var vertex = new THREE.Vector3();
-			vertex.x = randX;//x;
-			vertex.y = randY; //y;
+		  for (i = 0; i < totalObjects; i++){ 
+			let vertex = new THREE.Vector3();
+			vertex.x = target.position.x;
+			vertex.y = target.position.y;
 			vertex.z = -450;
-			console.log(vertex);
+			//console.log(vertex);
 		  
 			geometry.vertices.push( vertex );
 			dirs.push({x:(Math.random() * movementSpeed)-(movementSpeed/2),y:(Math.random() * movementSpeed)-(movementSpeed/2),z:(Math.random() * movementSpeed)-(movementSpeed/2)});
 		  }
-		  var material = new THREE.PointsMaterial( { size: objectSize,  color: colors[Math.round(Math.random() * colors.length)] });
+		  var material = new THREE.PointsMaterial( { size: objectSize, color: colors[Math.round(Math.random() * colors.length)] });
 		  var particles = new THREE.Points( geometry, material );
 		  
 		  this.object = particles;
 		  this.status = true;
 		  
-		  		  				let randX = Math.floor(Math.random() * (30 - (-30) + 1) + (-30));
-				let randY = Math.floor(Math.random() * (60 - (-60) + 1) + (-60));
+		  let randX = Math.floor(Math.random() * (30 - (-30) + 1) + (-30));
+		  let randY = Math.floor(Math.random() * (60 - (-60) + 1) + (-60));
 		  this.xDir = randX;//(Math.random() * movementSpeed)-(movementSpeed/2);
 		  this.yDir = randY;//(Math.random() * movementSpeed)-(movementSpeed/2);
 		  this.zDir = -450; //(Math.random() * movementSpeed)-(movementSpeed/2);
@@ -152,7 +149,7 @@
 		
 		function attackUnit(target){
 			// particle explosion 
-			parts.push(new explodeAnimation((Math.random() * sizeRandomness)-(sizeRandomness/2), (Math.random() * sizeRandomness)-(sizeRandomness/2)));
+			parts.push(new explodeAnimation((Math.random() * sizeRandomness)-(sizeRandomness/2), (Math.random() * sizeRandomness)-(sizeRandomness/2), target));
 			$('#container').effect("bounce");
 		}
 		
@@ -163,6 +160,8 @@
 		
 		function hideUnitArea(circle){
 			scene.remove(circle);
+			showArea = false;
+			currSelectedObj = null;
 		}
 		
 		function convert2dCoordsTo3d(evt){
@@ -188,8 +187,14 @@
 		Promise.all(loadedModels).then((objects) => {
 			objects.forEach((mesh) => {
 				
-				let randX = Math.floor(Math.random() * (30 - (-30) + 1) + (-30));
-				let randY = Math.floor(Math.random() * (60 - (-60) + 1) + (-60));
+				let randX;
+				if(mesh.side === "enemy"){
+					randX = Math.floor(Math.random() * (0 - (-30) + 1) + (-30));
+				}else{
+					randX = Math.floor(Math.random() * (30 - 2 + 1) + 2);
+				}
+				
+				let randY = Math.floor(Math.random() * (50 - (-50) + 1) + (-50));
 				mesh.position.set(randX, randY, -450);
 
 				scene.add(mesh);
@@ -254,7 +259,6 @@
 				return false;
 			}
 
-			let colors = [0xff0000, 0x00ff00, 0x0000ff];
 			//console.log(intersects);
 			for(var i = 0; i < intersects.length; i++) {
 				//console.log("hit!");
@@ -328,9 +332,7 @@
 				if(showArea && res.side === "player"){
 					console.log("hide select area");
 					hideUnitArea(res.selectArea);
-					showArea = false;
-					currSelectedObj = null;
-				}else if(showArea && res.name === "selectArea" && currSelectedObj.side === "player"){
+				}else if(showArea && currSelectedObj && res.name === "selectArea" && res.side !== "enemyArea"){
 					console.log("moving");
 					// move unit?
 					let obj = currSelectedObj;
@@ -388,7 +390,11 @@
 					showUnitArea(res, res.selectArea);
 					showArea = true;
 				}else if(res.side === "enemy"){
-					attackUnit();
+					// hide player area 
+					// deselect curr unit 
+					hideUnitArea(currSelectedObj.selectArea);
+					//currSelectedObj = null;
+					attackUnit(res);
 				}
 			}
 			
