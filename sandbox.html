@@ -2,14 +2,16 @@
 
 	<head>
 		<title>sndfjklnsfkld</title>
+		
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js'></script>
 		<script src='node_modules\three\examples\js\loaders\GLTFLoader.js'></script>
 		<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+	
 	</head>
 	
 	<style>
-		#container{
+		canvas{
 			border: 1px solid #000;
 		}
 	</style>
@@ -19,8 +21,44 @@
 		</div>
 	</body>
 
-	<script>
+	<script type="module">
+	//import { Water } from '/node_modules/three/examples/jsm/objects/Water.js';
+	// https://forums.ogre3d.org/viewtopic.php?t=47645
 	
+	
+	// https://stemkoski.github.io/Three.js/Shader-Animate.html
+	var waterShader = {
+	
+		vertexShader: [
+			'varying vec2 vUv;',
+			'void main(){',
+			'   vUv = uv;',
+			'   gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );}'
+		].join('\n'),
+		
+		fragmentShader: [
+			'uniform sampler2D baseTexture;',
+			'uniform float baseSpeed;',
+			'uniform sampler2D noiseTexture;',
+			'uniform float noiseScale;',
+			'uniform float alpha;',
+			'uniform float time;',
+			'varying vec2 vUv;',
+			'void main() {',
+			'	vec2 uvTimeShift = vUv + vec2( -0.7, 1.2 ) * time * baseSpeed;'	,
+			'	vec4 noiseGeneratorTimeShift = texture2D( noiseTexture, uvTimeShift );',
+			'	vec2 uvNoiseTimeShift = vUv + noiseScale * vec2( noiseGeneratorTimeShift.r, noiseGeneratorTimeShift.b );',
+			'	vec4 baseColor = texture2D( baseTexture, uvNoiseTimeShift );',
+			'	baseColor.a = alpha;',
+			'	gl_FragColor = baseColor;}  ',
+		].join('\n')
+	}
+
+
+
+
+
+
 		const WIDTH = 1400;
 		const HEIGHT = 600;
 		const VIEW_ANGLE = 100;
@@ -34,7 +72,7 @@
 		
 		const container = document.querySelector('#container');
 		const renderer = new THREE.WebGLRenderer();
-		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);	
+		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);
 		const scene = new THREE.Scene();
 	
 		let loader = new THREE.GLTFLoader();
@@ -45,14 +83,16 @@
 		
 		let currSelectedObj = null;
 		let showArea = false;
-		let spotLight = new THREE.SpotLight( 0xffffff );
-		spotLight.position.set( 0, 0, 1 );
+		let spotLight = new THREE.PointLight( 0xffffff, 1, -1 ); //new THREE.SpotLight( 0xffffff );
+		spotLight.position.set( 0, 0, -1 );
+	
 		spotLight.castShadow = true;
 		spotLight.shadow.mapSize.width = 3000;
 		spotLight.shadow.mapSize.height = 500;
 		spotLight.shadow.camera.near = 10;
 		spotLight.shadow.camera.far = 1000;
 		spotLight.shadow.camera.fov = 30;
+	
 		scene.add(spotLight);
 		
 		let loadedModels = [];
@@ -109,7 +149,7 @@
 		function explodeAnimation(x, y, target){
 		  var geometry = new THREE.Geometry();
 		  
-		  for (i = 0; i < totalObjects; i++){ 
+		  for (let i = 0; i < totalObjects; i++){ 
 			let vertex = new THREE.Vector3();
 			vertex.x = target.position.x;
 			vertex.y = target.position.y;
@@ -180,8 +220,10 @@
 			return v;
 		}
 		
-
+	// https://threejs.org/docs/#api/en/textures/Texture
+	// create a mesh, apply ocean shader on it 
 		loadedModels.push(getModel('../assets/battleship-edit.glb', 'player', 'p1'));
+		loadedModels.push(getModel('../assets/battleship2.glb', 'enemy', 'e1'));
 		loadedModels.push(getModel('../assets/battleship2.glb', 'enemy', 'e1'));
 		
 		Promise.all(loadedModels).then((objects) => {
@@ -216,20 +258,13 @@
 				mesh.selectArea = circle;
 				if(mesh.side === "enemy"){
 					circle.position.set(mesh.position.x, mesh.position.y, mesh.position.z);
-					scene.add(circle);
+					//scene.add(circle);
 					circle.side = "enemyArea";
 				}else{
 					circle.side = "playerArea";
 				}
 				
-				// try this instead https://threejs.org/docs/#api/en/core/Raycaster
-				// for knowing what unit the mouse is over 
-				//playerUnits["unit1"] = {'x': obj.position.x, 'y': obj.position.y}; // every time this unit moves it needs to be updated
-				
 				renderer.render(scene, camera);
-				
-				//window.addEventListener( 'mousemove', onMouseMove, false );
-				//window.requestAnimationFrame(render);
 			})
 		});
 		
@@ -248,7 +283,7 @@
 			// check if multiple hits! i.e. if player unit's area and enemy area overlap
 			// see if current unit's selectArea and an enemy's selectArea intersect
 			// if so, can't move 
-			intersectCheck = {};
+			let intersectCheck = {};
 			intersects.forEach((obj) => {
 				if(obj.object.name === "selectArea" && (obj.object.side === "enemyArea" || obj.object.side === "playerArea")){
 					intersectCheck[obj.object.side] = 1;
@@ -259,7 +294,7 @@
 				return false;
 			}
 
-			//console.log(intersects);
+
 			for(var i = 0; i < intersects.length; i++) {
 				//console.log("hit!");
 				if(intersects[i].object.side === "player"){
@@ -293,7 +328,6 @@
 			}else{
 				object.position.addScaledVector(directionVec, 0.2);
 			}
-			//renderer.render(scene, camera);
 		}
 		
 		function rotate(object, angle, targetVec, setIntervalName){
@@ -406,14 +440,67 @@
 			requestAnimationFrame( render );
 			 
 			var pCount = parts.length;
-			  while(pCount--) {
+			while(pCount--) {
 				parts[pCount].update();
-			  }
+			 }
 			renderer.render(scene, camera);
+			
+			if(waterMaterial){
+				waterMaterial.uniforms.time.value += 1.0 / 120.0;
+			}
+			
 		}
 		render();
 		
 
+
+	
+	var noiseTexture = new THREE.TextureLoader().load( 'waternormals.jpg', function(texture){
+		texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+	});
+	
+	var waterTexture = new THREE.TextureLoader().load( 'water.jpg', function(texture){
+		texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+	});
+		
+	var waterGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 100, 100);
+	
+	var uniforms = {
+		baseTexture: 	{ type: "t", value: waterTexture },
+		baseSpeed: 		{ type: "f", value: 0.02 },
+		noiseTexture: 	{ type: "t", value: noiseTexture },
+		noiseScale:		{ type: "f", value: 0.2 },
+		alpha: 			{ type: "f", value: 0.9 },
+		time: 			{ type: "f", value: 0.0 }
+	};
+	
+	var waterMaterial = new THREE.ShaderMaterial({
+		uniforms: uniforms,
+		vertexShader: waterShader['vertexShader'],
+		fragmentShader: waterShader['fragmentShader']
+	});
+	waterMaterial.side = THREE.FrontSide;
+	waterMaterial.transparent = true;
+	
+	var water = new THREE.Mesh(waterGeometry, waterMaterial);
+	water.position.x = 0;
+	water.position.y = 0;
+	water.position.z = -480;
+
+	scene.add(water);
+		
+		
+
+		let rotation = 0;
+		window.addEventListener('keydown', event => {
+			if(event.keyCode === 87){
+				//camera.position.x -= 50;
+				//rotation += 0.05;
+				//camera.position.y = Math.sin(rotation) * 500;
+				//camera.position.z = Math.cos(rotation) * 500;
+				//camera.rotation.y = camera.rotation.y += .05;
+			}
+		});
 
 	</script>
 
