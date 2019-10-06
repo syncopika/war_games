@@ -50,7 +50,7 @@
 			'	vec2 uvNoiseTimeShift = vUv + noiseScale * vec2( noiseGeneratorTimeShift.r, noiseGeneratorTimeShift.b );',
 			'	vec4 baseColor = texture2D( baseTexture, uvNoiseTimeShift );',
 			'	baseColor.a = alpha;',
-			'	gl_FragColor = baseColor;}  ',
+			'	gl_FragColor = baseColor;}',
 		].join('\n')
 	}
 
@@ -72,6 +72,7 @@
 		
 		const container = document.querySelector('#container');
 		const renderer = new THREE.WebGLRenderer();
+		renderer.shadowMap.enabled = true;
 		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);
 		const scene = new THREE.Scene();
 	
@@ -84,11 +85,11 @@
 		let currSelectedObj = null;
 		let showArea = false;
 		let spotLight = new THREE.PointLight( 0xffffff, 1, -1 ); //new THREE.SpotLight( 0xffffff );
-		spotLight.position.set( 0, 0, -1 );
+		spotLight.position.set( 0, 0, -200 );
 	
 		spotLight.castShadow = true;
-		spotLight.shadow.mapSize.width = 3000;
-		spotLight.shadow.mapSize.height = 500;
+		spotLight.shadow.mapSize.width = 512;
+		spotLight.shadow.mapSize.height = 512;
 		spotLight.shadow.camera.near = 10;
 		spotLight.shadow.camera.far = 1000;
 		spotLight.shadow.camera.fov = 30;
@@ -137,6 +138,75 @@
 			});
 		}
 		
+		let wakeDirs = [];
+		let wakeParts = [];
+		let wakeMovementSpeed = 10;
+		let totalWakeObjects = 25;
+		function wakeAnimation(x, y, target){
+			var geometry = new THREE.Geometry();
+			let distance = 0.5;
+			
+			// get normalized forward vector of object 
+			// https://stackoverflow.com/questions/25224153/how-can-i-get-the-normalized-vector-of-the-direction-an-object3d-is-facing
+			let forward = new THREE.Vector3(0, 0, 1);
+			forward.applyQuaternion(target.quaternion);
+			//forward.normalize();
+			console.log(forward);
+			
+			for (let i = 0; i < totalWakeObjects; i++){ 
+				// a wake will form a triangular shape 
+				// like this: / \ 
+				// so we apply a vertex for the left and right side of the wake. 
+				// given the current vector of the object the wake belongs to, we can 
+				// form the triangular shape by starting at the stern of the ship (rear)
+				// at the stern, the left and right vertices will be closest to the vector horizontally
+				// then they gradually increase in distance (x-axis) going further from the stern
+				let leftVertex = new THREE.Vector3();
+				leftVertex.x = target.position.x;
+				leftVertex.y = target.position.y;
+				leftVertex.z = -450;
+				geometry.vertices.push(leftVertex);
+				dirs.push({x: -distance, y: distance, z:-450});
+				
+				let rightVertex = new THREE.Vector3();
+				rightVertex.x = target.position.x;
+				rightVertex.y = target.position.y;
+				rightVertex.z = -450;
+				geometry.vertices.push(rightVertex);
+				dirs.push({x: distance, y: distance, z:-450});
+				
+				distance += 0.3;
+			  }
+			  var material = new THREE.PointsMaterial( { size: 5, color: 0xffffff });
+			  var particles = new THREE.Points( geometry, material );
+			  this.object = particles;
+			  this.status = true;
+			  
+			  scene.add(this.object); 
+			  
+			  this.update = function(){
+				if (this.status === true){
+				  var pCount = totalWakeObjects;
+				  while(pCount--) {
+					var particle = this.object.geometry.vertices[pCount];
+					particle.x += dirs[pCount].x;
+					
+					if(forward.y < 0){
+						particle.y -= dirs[pCount].y;
+					}else{
+						particle.y += dirs[pCount].y;
+					}
+					
+					//particle.z += dirs[pCount].z;
+				  }
+				  this.object.geometry.verticesNeedUpdate = true;
+				}else{
+					// remove vertices
+				}
+			}
+		}
+		
+		
 		// https://codepen.io/Xanmia/pen/DoljI
 		let movementSpeed = 20;
 		let totalObjects = 50;
@@ -154,8 +224,7 @@
 			vertex.x = target.position.x;
 			vertex.y = target.position.y;
 			vertex.z = -450;
-			//console.log(vertex);
-		  
+	  
 			geometry.vertices.push( vertex );
 			dirs.push({x:(Math.random() * movementSpeed)-(movementSpeed/2),y:(Math.random() * movementSpeed)-(movementSpeed/2),z:(Math.random() * movementSpeed)-(movementSpeed/2)});
 		  }
@@ -238,11 +307,10 @@
 				
 				let randY = Math.floor(Math.random() * (50 - (-50) + 1) + (-50));
 				mesh.position.set(randX, randY, -450);
-
+				mesh.castShadow = true;
+				mesh.receiveShadow = true;
+				
 				scene.add(mesh);
-				mesh.geometry.computeBoundingSphere();
-				boundingSphereRadius = mesh.geometry.boundingSphere.radius;
-				//console.log(boundingSphereRadius);
 				
 				let geometry = new THREE.CircleGeometry( 17, 32 ); //new THREE.CircleGeometry( boundingSphereRadius, 32 );
 				let material;
@@ -323,10 +391,10 @@
 			// stop movement if reach target		
 			// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
 			if(inRange(object.position, targetPos, 0.1)){
-				//console.log("reached destination: x: " + object.position.x + ", y: " + object.position.y);
 				clearInterval(setIntervalName);
 			}else{
 				object.position.addScaledVector(directionVec, 0.2);
+				wakeParts.push(new wakeAnimation(object.position.x, object.position.y, object));
 			}
 		}
 		
@@ -339,7 +407,6 @@
 			}else{
 				object.rotateOnAxis(new THREE.Vector3(0,1,0), angle);
 			}
-			//renderer.render(scene, camera);
 		}
 		
 		function getAngleBetween(obj, vec){
@@ -355,13 +422,11 @@
 						
 		renderer.domElement.addEventListener('click', (e) => {
 			let v = convert2dCoordsTo3d(e);
-			//console.log(v);
 			
 			mouse.x = (( e.clientX - renderer.domElement.offsetLeft ) / renderer.domElement.width) * 2 - 1;
 			mouse.y = - (( e.clientY - renderer.domElement.offsetTop ) / renderer.domElement.height) * 2 + 1;
 
 			let res = raycast();
-			//console.log(res);
 			if(res){
 				if(showArea && res.side === "player"){
 					console.log("hide select area");
@@ -370,6 +435,7 @@
 					console.log("moving");
 					// move unit?
 					let obj = currSelectedObj;
+					obj.isMoving = true;
 					// point unit in direction and move if possible
 					// step 1: get 3d point clicked on 
 					// step 2: get vector using point clicked on and unit's curr coords 
@@ -407,13 +473,12 @@
 						);
 					}
 					
-					// move to point clicked 
-					//console.log("curr position: x: " + obj.position.x + ", y: " + obj.position.y);
+					// move to point clicked
 					vec.normalize();
-					//console.log("destination position: x: " + v.x + ", y: " + v.y);
 					let moveFunc = setInterval(
 							function(){
 								move(obj, v, vec, moveFunc);
+								obj.isMoving = false;
 							}, 30
 						);
 					
@@ -431,8 +496,6 @@
 					attackUnit(res);
 				}
 			}
-			
-			//renderer.render(scene, camera);
 		});
 		
 		
@@ -443,12 +506,18 @@
 			while(pCount--) {
 				parts[pCount].update();
 			 }
-			renderer.render(scene, camera);
 			
 			if(waterMaterial){
-				waterMaterial.uniforms.time.value += 1.0 / 120.0;
+				waterMaterial.uniforms.time.value += 1.0 / 180.0;
 			}
 			
+			// wake animation if unit moving 
+			var wCount = wakeParts.length;
+			while(wCount--){
+				wakeParts[wCount].update();
+			}
+			
+			renderer.render(scene, camera);
 		}
 		render();
 		
@@ -463,8 +532,9 @@
 		texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 	});
 		
-	var waterGeometry = new THREE.PlaneBufferGeometry(1000, 1000, 100, 100);
+	var waterGeometry = new THREE.PlaneBufferGeometry(1000, 1000);
 	
+	// what does type mean?
 	var uniforms = {
 		baseTexture: 	{ type: "t", value: waterTexture },
 		baseSpeed: 		{ type: "f", value: 0.02 },
@@ -483,24 +553,25 @@
 	waterMaterial.transparent = true;
 	
 	var water = new THREE.Mesh(waterGeometry, waterMaterial);
+	water.receiveShadow = true;
 	water.position.x = 0;
 	water.position.y = 0;
-	water.position.z = -480;
+	water.position.z = -460;
 
 	scene.add(water);
 		
 		
 
-		let rotation = 0;
-		window.addEventListener('keydown', event => {
-			if(event.keyCode === 87){
-				//camera.position.x -= 50;
-				//rotation += 0.05;
-				//camera.position.y = Math.sin(rotation) * 500;
-				//camera.position.z = Math.cos(rotation) * 500;
-				//camera.rotation.y = camera.rotation.y += .05;
-			}
-		});
+	let rotation = 0;
+	window.addEventListener('keydown', event => {
+		if(event.keyCode === 87){
+			//camera.position.x -= 50;
+			//rotation += 0.05;
+			//camera.position.y = Math.sin(rotation) * 500;
+			//camera.position.z = Math.cos(rotation) * 500;
+			//camera.rotation.y = camera.rotation.y += .05;
+		}
+	});
 
 	</script>
 
