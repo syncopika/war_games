@@ -153,31 +153,47 @@
 			//forward.normalize();
 			console.log(forward);
 			
+			// negative x = moving right 
+			// negative y = moving up 
+			// need to add x and y in the correct direction based on forward
+			
 			for (let i = 0; i < totalWakeObjects; i++){ 
 				// a wake will form a triangular shape 
 				// like this: / \ 
 				// so we apply a vertex for the left and right side of the wake. 
 				// given the current vector of the object the wake belongs to, we can 
-				// form the triangular shape by starting at the stern of the ship (rear)
+				// form the triangular shape by starting at the stern of the ship (rear - maybe should be the bow)
 				// at the stern, the left and right vertices will be closest to the vector horizontally
 				// then they gradually increase in distance (x-axis) going further from the stern
-				let leftVertex = new THREE.Vector3();
-				leftVertex.x = target.position.x;
-				leftVertex.y = target.position.y;
+				
+				// how about this: position the particles at an angle from the current forward vector.
+				// so the left particles are something like 30 degrees from the forward vector's REVERSE,
+				// and thr right particles are -30 from the forward's REVERSE vector.
+				
+				let reverseVec = new THREE.Vector3(forward.x*-1, forward.y*-1, forward.z);
+				let leftVector = getVectorAtAngleFrom(reverseVec, 20).normalize(); // depending on the object's angle, this left vec might be the right vec
+				let rightVector = getVectorAtAngleFrom(reverseVec, -20).normalize();
+				
+				leftVector.multiplyScalar(5);
+				rightVector.multiplyScalar(5);
+				
+				let leftVertex = new THREE.Vector3(target.position.x, target.position.y, -450);
+				leftVertex.add(leftVector);
+				
 				leftVertex.z = -450;
 				geometry.vertices.push(leftVertex);
-				dirs.push({x: -distance, y: distance, z:-450});
+				wakeDirs.push({x: leftVertex.x-distance, y: leftVertex.y-distance, z: -450});
 				
-				let rightVertex = new THREE.Vector3();
-				rightVertex.x = target.position.x;
-				rightVertex.y = target.position.y;
+				let rightVertex = new THREE.Vector3(target.position.x, target.position.y, -450);
+				rightVertex.add(rightVector);
+				
 				rightVertex.z = -450;
 				geometry.vertices.push(rightVertex);
-				dirs.push({x: distance, y: distance, z:-450});
+				wakeDirs.push({x: rightVertex.x-distance, y: rightVertex.y-distance, z: -450});
 				
-				distance += 0.3;
+				distance += 0.8;
 			  }
-			  var material = new THREE.PointsMaterial( { size: 5, color: 0xffffff });
+			  var material = new THREE.PointsMaterial( { size: 8, color: 0xffffff });
 			  var particles = new THREE.Points( geometry, material );
 			  this.object = particles;
 			  this.status = true;
@@ -189,15 +205,8 @@
 				  var pCount = totalWakeObjects;
 				  while(pCount--) {
 					var particle = this.object.geometry.vertices[pCount];
-					particle.x += dirs[pCount].x;
-					
-					if(forward.y < 0){
-						particle.y -= dirs[pCount].y;
-					}else{
-						particle.y += dirs[pCount].y;
-					}
-					
-					//particle.z += dirs[pCount].z;
+					particle.x = wakeDirs[pCount].x;
+					particle.y = wakeDirs[pCount].y;
 				  }
 				  this.object.geometry.verticesNeedUpdate = true;
 				}else{
@@ -410,6 +419,7 @@
 		}
 		
 		function getAngleBetween(obj, vec){
+			// https://github.com/mrdoob/three.js/issues/1606
 			let matrix = new THREE.Matrix4();
 			matrix.extractRotation( obj.matrix );
 			let direction = new THREE.Vector3( 0, 0, 1 );
@@ -418,6 +428,18 @@
 			let currDirectionVector = direction; 
 			let angleBetween = currDirectionVector.angleTo(vec);
 			return angleBetween;
+		}
+		
+		function getVectorAtAngleFrom(baseVec, angleTo){
+			let radians = THREE.Math.degToRad(angleTo);
+			let matrix = new THREE.Matrix3().set(
+				Math.cos(radians), -Math.sin(radians), 0,
+				Math.sin(radians), Math.cos(radians), 0,
+				0, 0, 1
+			);
+			let newVec = new THREE.Vector3(baseVec.x, baseVec.y, baseVec.z);
+			newVec.applyMatrix3(matrix);
+			return newVec;
 		}
 						
 		renderer.domElement.addEventListener('click', (e) => {
