@@ -7,7 +7,7 @@
 		<script src='node_modules\three\examples\js\loaders\GLTFLoader.js'></script>
 		<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
 		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
-	
+		<script src="nearestneighbor.js"></script>
 	</head>
 	
 	<style>
@@ -19,9 +19,10 @@
 	<body>
 		<div id='container'>
 		</div>
+		<button onclick='enemyMove()'> end turn </button>
 	</body>
 
-	<script type="module">
+	<script>
 	//import { Water } from '/node_modules/three/examples/jsm/objects/Water.js';
 	// https://forums.ogre3d.org/viewtopic.php?t=47645
 	
@@ -54,11 +55,6 @@
 		].join('\n')
 	}
 
-
-
-
-
-
 		const WIDTH = 1400;
 		const HEIGHT = 600;
 		const VIEW_ANGLE = 100;
@@ -80,7 +76,8 @@
 		let obj = null;
 		let area = null;
 		let boundingSphereRadius = null;
-		let playerUnits = {};
+		let playerUnits = [];
+		let enemyUnits = [];
 		
 		let currSelectedObj = null;
 		let showArea = false;
@@ -138,26 +135,26 @@
 			});
 		}
 		
-		let wakeDirs = [];
+	
 		let wakeParts = [];
-		let wakeMovementSpeed = 10;
-		let totalWakeObjects = 25;
-		function wakeAnimation(x, y, target){
-			var geometry = new THREE.Geometry();
-			let distance = 0.5;
+		let totalWakeObjects = 1;
+		function wakeAnimation(x, y, obj, targetPos){
+			let geometry = new THREE.Geometry();
+			let wakeDirs = [];
+			//let distance = 0.5;
 			
-			// get normalized forward vector of object 
-			// https://stackoverflow.com/questions/25224153/how-can-i-get-the-normalized-vector-of-the-direction-an-object3d-is-facing
-			let forward = new THREE.Vector3(0, 0, 1);
-			forward.applyQuaternion(target.quaternion);
-			//forward.normalize();
-			console.log(forward);
+			let forward = new THREE.Vector3(targetPos.x - obj.position.x, targetPos.y - obj.position.y, -450); 
+			
+			// https://github.com/mrdoob/three.js/issues/1606
+			let forward2 = new THREE.Vector3(0,0,1).applyQuaternion(obj.quaternion);
 			
 			// negative x = moving right 
 			// negative y = moving up 
 			// need to add x and y in the correct direction based on forward
-			
-			for (let i = 0; i < totalWakeObjects; i++){ 
+			let colors = ['0xffffff']; //'0xefeff9', '0xffffff', '0xe0e2f7', '0xe4e5f1', '0xf1f2fb'
+			let color = colors[Math.floor(Math.random() * (colors.length))];
+
+			for(let i = 0; i < totalWakeObjects; i++){ 
 				// a wake will form a triangular shape 
 				// like this: / \ 
 				// so we apply a vertex for the left and right side of the wake. 
@@ -168,42 +165,62 @@
 				
 				// how about this: position the particles at an angle from the current forward vector.
 				// so the left particles are something like 30 degrees from the forward vector's REVERSE,
-				// and thr right particles are -30 from the forward's REVERSE vector.
+				// and the right particles are -30 from the forward's REVERSE vector.
+				/*
+				let reverseVec = new THREE.Vector3(forward.x*-1, forward.y*-1, -450);
+				let leftVector = getVectorAtAngleFrom(reverseVec, 25); // depending on the object's angle, this left vec might be the right vec
+				let rightVector = getVectorAtAngleFrom(reverseVec, -25);
 				
-				let reverseVec = new THREE.Vector3(forward.x*-1, forward.y*-1, forward.z);
-				let leftVector = getVectorAtAngleFrom(reverseVec, 20).normalize(); // depending on the object's angle, this left vec might be the right vec
-				let rightVector = getVectorAtAngleFrom(reverseVec, -20).normalize();
+				let leftVertex = new THREE.Vector3(obj.position.x, obj.position.y, -450);
+				let rightVertex = new THREE.Vector3(obj.position.x, obj.position.y, -450);
 				
-				leftVector.multiplyScalar(5);
-				rightVector.multiplyScalar(5);
-				
-				let leftVertex = new THREE.Vector3(target.position.x, target.position.y, -450);
-				leftVertex.add(leftVector);
+				forward.multiplyScalar(.7);
+				leftVertex.add(leftVector).add(forward);
+				rightVertex.add(rightVector).add(forward);
 				
 				leftVertex.z = -450;
-				geometry.vertices.push(leftVertex);
-				wakeDirs.push({x: leftVertex.x-distance, y: leftVertex.y-distance, z: -450});
-				
-				let rightVertex = new THREE.Vector3(target.position.x, target.position.y, -450);
-				rightVertex.add(rightVector);
-				
 				rightVertex.z = -450;
-				geometry.vertices.push(rightVertex);
-				wakeDirs.push({x: rightVertex.x-distance, y: rightVertex.y-distance, z: -450});
 				
-				distance += 0.8;
+				
+				//distance = 0;
+
+				geometry.vertices.push(leftVertex);
+				wakeDirs.push({x: leftVertex.x, y: leftVertex.y});
+
+				geometry.vertices.push(rightVertex);
+				wakeDirs.push({x: rightVertex.x, y: rightVertex.y});
+				*/
+				
+				//////////////////////////////////////////////////////
+				let reverseVec2 = new THREE.Vector3(forward2.x*-1, forward2.y*-1, forward2.z);
+				let leftVector2 = getVectorAtAngleFrom(reverseVec2, 20); 
+				let rightVector2 = getVectorAtAngleFrom(reverseVec2, -20);
+				leftVector2.multiplyScalar(5);
+				rightVector2.multiplyScalar(5);
+				
+				let leftVertex2 = new THREE.Vector3(obj.position.x, obj.position.y, -450);
+				let rightVertex2 = new THREE.Vector3(obj.position.x, obj.position.y, -450);
+				
+				leftVertex2.add(leftVector2);
+				rightVertex2.add(rightVector2);
+				
+				geometry.vertices.push(leftVertex2);
+				wakeDirs.push({x: leftVertex2.x, y: leftVertex2.y});
+
+				geometry.vertices.push(rightVertex2);
+				wakeDirs.push({x: rightVertex2.x, y: rightVertex2.y});
+				
 			  }
-			  var material = new THREE.PointsMaterial( { size: 8, color: 0xffffff });
+			  var material = new THREE.PointsMaterial( { size: 7, color: parseInt(color, 16)});
 			  var particles = new THREE.Points( geometry, material );
 			  this.object = particles;
 			  this.status = true;
 			  
 			  scene.add(this.object); 
-			  
 			  this.update = function(){
 				if (this.status === true){
-				  var pCount = totalWakeObjects;
-				  while(pCount--) {
+				  let pCount = this.object.geometry.vertices.length;
+				  while(pCount--){
 					var particle = this.object.geometry.vertices[pCount];
 					particle.x = wakeDirs[pCount].x;
 					particle.y = wakeDirs[pCount].y;
@@ -211,6 +228,8 @@
 				  this.object.geometry.verticesNeedUpdate = true;
 				}else{
 					// remove vertices
+					console.log("removing particles");
+					scene.remove(this.object);
 				}
 			}
 		}
@@ -301,6 +320,7 @@
 	// https://threejs.org/docs/#api/en/textures/Texture
 	// create a mesh, apply ocean shader on it 
 		loadedModels.push(getModel('../assets/battleship-edit.glb', 'player', 'p1'));
+		loadedModels.push(getModel('../assets/battleship-edit.glb', 'player', 'p1'));
 		loadedModels.push(getModel('../assets/battleship2.glb', 'enemy', 'e1'));
 		loadedModels.push(getModel('../assets/battleship2.glb', 'enemy', 'e1'));
 		
@@ -309,9 +329,12 @@
 				
 				let randX;
 				if(mesh.side === "enemy"){
+					// put enemies on the left half of the map
 					randX = Math.floor(Math.random() * (0 - (-30) + 1) + (-30));
+					enemyUnits.push(mesh);
 				}else{
 					randX = Math.floor(Math.random() * (30 - 2 + 1) + 2);
+					playerUnits.push(mesh);
 				}
 				
 				let randY = Math.floor(Math.random() * (50 - (-50) + 1) + (-50));
@@ -331,6 +354,7 @@
 				// make one circle for attack range, and one for movement range
 				let circle = new THREE.Mesh( geometry, material );
 				circle.name = "selectArea";
+				// get radius via: circle.geometry.parameters.radius
 			
 				mesh.selectArea = circle;
 				if(mesh.side === "enemy"){
@@ -387,8 +411,6 @@
 					return intersects[i].object;
 				}
 			}
-			
-			
 			return false;
 		}
 		
@@ -396,14 +418,21 @@
 			return (v1.x <= v2.x + limit && v1.x >= v2.x - limit && v1.y <= v2.y + limit && v1.y >= v2.y - limit);
 		}
 		
+		let wakeParticleDist = 0.5;
 		function move(object, targetPos, directionVec, setIntervalName){
 			// stop movement if reach target		
 			// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
 			if(inRange(object.position, targetPos, 0.1)){
 				clearInterval(setIntervalName);
+				wakeParts.forEach((part) => {
+					// clear out particles
+					part.status = false;
+					part.update();
+				});
+				wakeParts = [];
 			}else{
 				object.position.addScaledVector(directionVec, 0.2);
-				wakeParts.push(new wakeAnimation(object.position.x, object.position.y, object));
+				wakeParts.push(new wakeAnimation(object.position.x, object.position.y, object, targetPos));
 			}
 		}
 		
@@ -523,7 +552,8 @@
 		
 		function render() {
 			requestAnimationFrame( render );
-			 
+			
+			// for explosion particles
 			var pCount = parts.length;
 			while(pCount--) {
 				parts[pCount].update();
@@ -594,6 +624,7 @@
 			//camera.rotation.y = camera.rotation.y += .05;
 		}
 	});
+	
 
 	</script>
 
