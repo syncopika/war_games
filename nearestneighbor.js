@@ -156,6 +156,13 @@ function enemyMove(){
 	console.log(playerList);
 	enemyUnits.forEach((enemyObj) => {
 		let neighbor = findNearestNeighbor(tree, enemyObj.position.x, enemyObj.position.y);
-		console.log("I am at: " + "x: " + enemyObj.position.x + ", y: " + enemyObj.position.y + ". The enemy is should attack is at: x: " + neighbor.x + ", y: " + neighbor.y);
+		console.log("I am at: " + "x: " + enemyObj.position.x + ", y: " + enemyObj.position.y + ". The enemy I should attack is at: x: " + neighbor.x + ", y: " + neighbor.y);
+		// move the enemy units towards their selected opponent 
+		//console.log(enemyObj.selectArea.geometry.parameters.radius);
+		let neighborMesh = neighbor.obj;
+		let vecToOpponent = new THREE.Vector3(neighbor.x - enemyObj.position.x, neighbor.y - enemyObj.position.y, -450).normalize();
+		vecToOpponent.multiplyScalar(5);
+		let posToMoveTo = new THREE.Vector3(enemyObj.position.x + vecToOpponent.x, enemyObj.position.y + vecToOpponent.y, -450);
+		moveObj(enemyObj, posToMoveTo);
 	});
 }
