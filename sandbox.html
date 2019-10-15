@@ -436,12 +436,13 @@
 			}
 		}
 		
-		function rotate(object, angle, targetVec, setIntervalName){
+		function rotate(object, angle, targetVec, setIntervalName, resolve){
 			let limit = 0.02;
 			let angleBetween = getAngleBetween(object, targetVec);
 			if(angleBetween >= -limit && angleBetween <= limit){
-				console.log("finished rotating");
+				//console.log("finished rotating");
 				clearInterval(setIntervalName);
+				resolve("done rotating");
 			}else{
 				object.rotateOnAxis(new THREE.Vector3(0,1,0), angle);
 			}
@@ -512,6 +513,8 @@
 		
 		function moveObj(objToMove, targetPos){
 		
+			// probably should return a promise here...
+		
 			let obj = objToMove;
 			let v = targetPos;
 			let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z - obj.position.z);
@@ -529,30 +532,37 @@
 			let currDirectionVector = direction; 
 	
 			let crossProductLength = currDirectionVector.cross(vec);
-			if(crossProductLength.z > 0){
-				// clockwise
-				let rotateFunc = setInterval(
-					function(){
-						rotate(obj, angleBetween / 40, vec, rotateFunc);
-					}, 35
-				);
-			}else{
-				// counterclockwise
-				let rotateFunc = setInterval(
-					function(){
-						rotate(obj, -angleBetween / 40, vec, rotateFunc);
-					}, 35
-				);
-			}
+			let rotatePromise = new Promise((resolve, reject) => {
+				if(crossProductLength.z > 0){
+					// clockwise
+					let rotateFunc = setInterval(
+						function(){
+							rotate(obj, angleBetween / 40, vec, rotateFunc, resolve);
+						}, 35
+					);
+				}else{
+					// counterclockwise
+					let rotateFunc = setInterval(
+						function(){
+							rotate(obj, -angleBetween / 40, vec, rotateFunc, resolve);
+						}, 35
+					);
+				}
+			});
 			
-			// move to point clicked
-			vec.normalize();
-			let moveFunc = setInterval(
-					function(){
-						move(obj, v, vec, moveFunc);
-						obj.isMoving = false;
-					}, 30
-				);
+			rotatePromise.then((result) => {
+				console.log(result);
+				
+				// move to point clicked
+				vec.normalize();
+				let moveFunc = setInterval(
+						function(){
+							obj.isMoving = true;
+							move(obj, v, vec, moveFunc);
+							obj.isMoving = false;
+						}, 30
+					);
+			});
 		}
 		
 		function render() {

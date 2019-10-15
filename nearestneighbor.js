@@ -161,7 +161,7 @@ function enemyMove(){
 		//console.log(enemyObj.selectArea.geometry.parameters.radius);
 		let neighborMesh = neighbor.obj;
 		let vecToOpponent = new THREE.Vector3(neighbor.x - enemyObj.position.x, neighbor.y - enemyObj.position.y, -450).normalize();
-		vecToOpponent.multiplyScalar(5);
+		vecToOpponent.multiplyScalar(100);
 		let posToMoveTo = new THREE.Vector3(enemyObj.position.x + vecToOpponent.x, enemyObj.position.y + vecToOpponent.y, -450);
 		moveObj(enemyObj, posToMoveTo);
 	});
