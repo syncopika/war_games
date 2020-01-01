@@ -75,15 +75,15 @@ class Game extends React.Component{
 		}
 		
 		// populate map 
-		self.placeRandom("./assets/battleship.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
+		self.placeRandom("./assets/nyasu7.png", width - 10, width, 0, height, {'health': 100, 'attack': 20, 'className': 'player', 'unitType': 'boss'});
 		
 		// place enemies 
 		for(let i = 0; i < 10; i++){
-			self.placeRandom("./assets/battleship2.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
+			self.placeRandom("./assets/shiina2.png", 0, width, 0, height, {'health': 20, 'attack': 5, 'className': 'enemy', 'unitType': 'infantry'});
 		}
 		
 		// place enemy boss
-		self.placeRandom("./assets/battleship3.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
+		self.placeRandom("./assets/umaruchan.png", 0, 10, 0, height, {'health': 50, 'attack': 5, 'className' : 'enemy', 'unitType': 'boss'});
 		
 		// place obstacles
 		for(let i = 0; i < 17; i++){

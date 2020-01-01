@@ -37,7 +37,7 @@ const Header = (props) => {
 			
 			<div id='title'>
 				<h3> 2d turn-based game idea </h3>
-				<p> click on the light grey battleship on the grid to move. </p>
+				<p> click on the cat on the grid to move. </p>
 				<p> click on an adjacent enemy unit to do damage, or on any enemy unit to get info. </p> 
 				<p> click on 'draw cards' to get some new abilities. </p>
 				<p>'end turn' causes the enemies to move and possibly do damage to you. </p>
@@ -46,7 +46,6 @@ const Header = (props) => {
 					<option value="breadth-first search">breadth-first search</option>
 					<option value="A*">A*</option>
 				</select>
-				<p> sorry about the bad art lol </p>
 			</div>
 			
 			<div id='playerInfo'>

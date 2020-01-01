@@ -2,8 +2,8 @@ import Card  from '../Card.js';
 import { getPathsDefault, selectEnemyOn, selectEnemyOut, getAttackRange } from './../Utils.js';
 
 const BearAttack = new Card(
-"shark attack",
-"./assets/sharkattack.png",
+"bear attack",
+"./assets/aoba6.png",
 function(gameState, name, gameMethods){
 	
 	let currentUnit = gameState.currentPlayerUnit;
@@ -71,7 +71,7 @@ function(gameState, name, gameMethods){
 		}
 	});
 },
-"launch a shark attack on your favorite enemy.  after clicking 'activate', select one enemy unit to inflict 10 damage."
+"launch a bear attack on your favorite enemy unit.  after clicking 'activate', select one enemy unit to inflict 10 damage."
 );
 
 export { BearAttack };

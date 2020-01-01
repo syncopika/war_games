@@ -16,7 +16,7 @@ const Grid = (props) => {
 		'border': '1px solid #000',
 		'width': w + 'px',
 		'height': h + 'px',
-		'backgroundSize': '100% 50%',
+		'backgroundSize': '100% 100%',
 		'backgroundRepeat': 'no-repeat',
 		'backgroundPosition': "center"
 	};
