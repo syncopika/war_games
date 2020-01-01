@@ -166,43 +166,22 @@
 				// how about this: position the particles at an angle from the current forward vector.
 				// so the left particles are something like 30 degrees from the forward vector's REVERSE,
 				// and the right particles are -30 from the forward's REVERSE vector.
-				/*
-				let reverseVec = new THREE.Vector3(forward.x*-1, forward.y*-1, -450);
-				let leftVector = getVectorAtAngleFrom(reverseVec, 25); // depending on the object's angle, this left vec might be the right vec
-				let rightVector = getVectorAtAngleFrom(reverseVec, -25);
 				
-				let leftVertex = new THREE.Vector3(obj.position.x, obj.position.y, -450);
-				let rightVertex = new THREE.Vector3(obj.position.x, obj.position.y, -450);
-				
-				forward.multiplyScalar(.7);
-				leftVertex.add(leftVector).add(forward);
-				rightVertex.add(rightVector).add(forward);
-				
-				leftVertex.z = -450;
-				rightVertex.z = -450;
-				
-				
-				//distance = 0;
-
-				geometry.vertices.push(leftVertex);
-				wakeDirs.push({x: leftVertex.x, y: leftVertex.y});
-
-				geometry.vertices.push(rightVertex);
-				wakeDirs.push({x: rightVertex.x, y: rightVertex.y});
-				*/
-				
-				//////////////////////////////////////////////////////
 				let reverseVec2 = new THREE.Vector3(forward2.x*-1, forward2.y*-1, forward2.z);
 				let leftVector2 = getVectorAtAngleFrom(reverseVec2, 20); 
 				let rightVector2 = getVectorAtAngleFrom(reverseVec2, -20);
+			
 				leftVector2.multiplyScalar(5);
 				rightVector2.multiplyScalar(5);
+				reverseVec2.multiplyScalar(8);
 				
 				let leftVertex2 = new THREE.Vector3(obj.position.x, obj.position.y, -450);
 				let rightVertex2 = new THREE.Vector3(obj.position.x, obj.position.y, -450);
-				
+				let rearVertex2 = new THREE.Vector3(obj.position.x, obj.position.y, -450);
+			
 				leftVertex2.add(leftVector2);
 				rightVertex2.add(rightVector2);
+				rearVertex2.sub(reverseVec2);
 				
 				geometry.vertices.push(leftVertex2);
 				wakeDirs.push({x: leftVertex2.x, y: leftVertex2.y});
@@ -210,8 +189,11 @@
 				geometry.vertices.push(rightVertex2);
 				wakeDirs.push({x: rightVertex2.x, y: rightVertex2.y});
 				
+				geometry.vertices.push(rearVertex2);
+				wakeDirs.push({x: rearVertex2.x, y: rearVertex2.y});
+				
 			  }
-			  var material = new THREE.PointsMaterial( { size: 7, color: parseInt(color, 16)});
+			  var material = new THREE.PointsMaterial( { size: 7.5, color: parseInt(color, 16)});
 			  var particles = new THREE.Points( geometry, material );
 			  this.object = particles;
 			  this.status = true;
@@ -418,7 +400,7 @@
 			return (v1.x <= v2.x + limit && v1.x >= v2.x - limit && v1.y <= v2.y + limit && v1.y >= v2.y - limit);
 		}
 		
-		let wakeParticleDist = 0.5;
+		//let wakeParticleDist = 0.5;
 		function move(object, targetPos, directionVec, setIntervalName){
 			// stop movement if reach target		
 			// remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
@@ -513,7 +495,9 @@
 		
 		function moveObj(objToMove, targetPos){
 		
-			// probably should return a promise here...
+			// check to make sure what moves are valid.
+			// i.e. if an enemy ship is alread in another enemy's circle, they can move outside the circle
+			// or rotate. they can't move closer if already in range to a fellow enemy. 
 		
 			let obj = objToMove;
 			let v = targetPos;
