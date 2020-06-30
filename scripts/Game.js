@@ -190,7 +190,7 @@ class Game extends React.Component{
 				let attackRange = getAttackRange(currElement, 2);
 				for(let path in attackRange){
 					if(attackRange[path]){
-						attackRange[path].style.border = "1px solid #FF1919";
+						attackRange[path].style.border = "1px solid #ff1919";
 					}
 				}
 			}

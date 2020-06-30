@@ -20,8 +20,8 @@ const Header = (props) => {
 				<span>
 				{
 					(currEnemy === null) ? 
-					(<img id='selectedEnemy' width='200px' height='80px' src='./assets/blank.png' />) :
-					(<img id='selectedEnemy' src={currEnemy.style.backgroundImage ? getImageSrc(currEnemy.style.backgroundImage) : ""} width='200px' height='80px' />)
+					(<img id='selectedEnemy' width='0px' height='0px' src='./assets/blank.png' />) :
+					(<img id='selectedEnemy' src={currEnemy.style.backgroundImage ? getImageSrc(currEnemy.style.backgroundImage) : ""} width='80px' height='80px' />)
 				}
 				</span>
 				<h3> enemy health: { 
@@ -53,8 +53,8 @@ const Header = (props) => {
 				<span>
 				{
 					(currPlayerUnit === null) ? 
-					(<img id='player' width='200px' height='80px' src='./assets/blank.png' />) :
-					(<img id='player' src={getImageSrc(currPlayerUnit.style.backgroundImage)} width='200px' height='80px' />)
+					(<img id='player' width='0px' height='0px' src='./assets/blank.png' />) :
+					(<img id='player' src={getImageSrc(currPlayerUnit.style.backgroundImage)} width='80px' height='80px' />)
 				}
 				</span> 
 				<h3> player health: {
