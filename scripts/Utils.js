@@ -14,7 +14,7 @@ function convert2dCoordsTo3d(elementClicked, rendererObj, camera, containerWidth
 
 	let x = posX / containerWidth * 2 - 1;
 	let y = posY / containerHeight * -2 + 1;
-	let v = new THREE.Vector3( x, y, -450 ).unproject( camera );
+	let v = new THREE.Vector3(x, y, -450).unproject(camera);
 	return v;
 }
 

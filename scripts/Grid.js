@@ -11,7 +11,10 @@ const Grid = (props) => {
 	let cellHeight = 100 / numRows; // a percentage of 100
 	
 	let containerStyle = {
-		'position': 'relative'
+		'position': 'relative',
+        'width': props.width + 'px',
+        'display': 'block',
+        'margin': '0 auto',
 	};
 	
 	let gridStyle = {

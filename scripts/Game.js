@@ -63,10 +63,9 @@ class Game extends React.Component{
 			'currentEnemyUnit': null, // for displaying info of the current enemy selected
 			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
 			'playerTurn': true, // boolean indicating if player's turn or not
-			'camera': null,
 			'renderer': null,
 			'scene': null,
-			'loader': new GLTFLoader()
+			'loader': new GLTFLoader(), // don't think this should be part of react state?
 		};
 		
 		this.pathHighlight = "1px solid rgb(203, 216, 245)";
@@ -75,6 +74,15 @@ class Game extends React.Component{
 		this.playerUnitStats = {'health': 50, 'attack': 20, 'className': 'player', 'unitType': 'range2', 'direction': 'left', 'span': 3, 'bgImage': 'assets/battleship-edit.png'};
 		this.enemyUnitStats = {'health': 50, 'attack': 20, 'className': 'enemy', 'unitType': 'range2', 'direction': 'right', 'span': 3, 'bgImage': 'assets/battleship2-edit.png'};
 		
+        this.orthoCamera = null;
+        this.perspCamera = null;
+        
+        // for lerping camera
+        this.camStartPos = null;   // initial position before lerping
+        this.camStartTime; // start time for lerping
+        this.lerpCamera = false;
+        this.clock = new THREE.Clock();
+        
 		// methods for binding to pass to child components 
 		this.drawCards = this.drawCards.bind(this);
 		this.endPlayerTurn = this.endPlayerTurn.bind(this);
@@ -89,6 +97,7 @@ class Game extends React.Component{
 		this.clearPlayerUnits = this.clearPlayerUnits.bind(this);
 		this.removeCardFromHand = this.removeCardFromHand.bind(this);
 		this.setPlayerMoves = this.setPlayerMoves.bind(this);
+        this.toggleLerpCamera = this.toggleLerpCamera.bind(this);
 	}
 	
 	/*** 
@@ -116,12 +125,6 @@ class Game extends React.Component{
 			}
 		}
 		
-
-		// place obstacles
-		for(let i = 0; i < 10; i++){
-			self.placeObstacles(0, self.state.numCols-1, 0, self.state.numRows-1);
-		}
-		
 		const WIDTH = self.state.width; //1400;
 		const HEIGHT = self.state.height; //600;
 		const VIEW_ANGLE = 100;
@@ -135,42 +138,75 @@ class Game extends React.Component{
 		
 		const container = document.querySelector('#container');
 		const renderer = new THREE.WebGLRenderer();
-		const camera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);	
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.BasicShadowMap;
+        
+        this.orthoCamera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);
+        this.perspCamera = new THREE.PerspectiveCamera(15, WIDTH / HEIGHT, 1, 5000);
+        
+        const geometry = new THREE.PlaneGeometry(500, 300);
+        const material = new THREE.MeshBasicMaterial({color: 0x187bcd, side: THREE.DoubleSide});
+        //material.wireframe = true;
+        const plane = new THREE.Mesh(geometry, material);
+        plane.receiveShadow = true;
+        plane.translateZ(-449.6);
+        
 		const scene = new THREE.Scene();
-		scene.background = new THREE.Color( 0xffffff );
+		scene.background = new THREE.Color(0xffffff);
 		
-		scene.add(camera);
+		scene.add(this.orthoCamera);
+        scene.add(this.perspCamera);
+        scene.add(plane);
+        
 		renderer.setSize(WIDTH, HEIGHT);	
 		container.appendChild(renderer.domElement);
-		renderer.render(scene, camera);
 		
-		this.setState({'renderer': renderer, 'camera': camera, 'scene': scene});
+		this.setState({'renderer': renderer, 'camera': this.orthoCamera, 'scene': scene});
+        
+        const hemiLight = new THREE.HemisphereLight(0xffffff);
+        hemiLight.position.set(0, 0, 10);
+        scene.add(hemiLight);
 		
-		let spotLight = new THREE.SpotLight( 0xffffff );
-		spotLight.position.set( 0, 0, 1 );
+		let spotLight = new THREE.SpotLight(0xffffff);
+		spotLight.position.set(0, 0, 20);
 		spotLight.castShadow = true;
+        /*
 		spotLight.shadow.mapSize.width = 3000;
 		spotLight.shadow.mapSize.height = 500;
 		spotLight.shadow.camera.near = 10;
 		spotLight.shadow.camera.far = 1000;
 		spotLight.shadow.camera.fov = 30;
+        */
 		scene.add(spotLight);
 			
 		let obj = null;
 		let loadedModels = [];
-		loadedModels.push(self.getModel('../assets/battleship-edit.glb', 'player'));
-		loadedModels.push(self.getModel('../assets/battleship2.glb', 'enemy'));
+		loadedModels.push(self.getModel('../assets/battleship-edit.glb', 'player', 'player'));
+		loadedModels.push(self.getModel('../assets/battleship2.glb', 'enemy', 'enemy'));
+        loadedModels.push(self.getModel('../assets/spiky-thing.gltf', 'none', 'obstacle'));
 		
 		Promise.all(loadedModels).then((objects) => {
+            
+            console.log(objects);
+            
+            // place obstacles
+            const obstacleModel = objects.filter(x => x.name === "obstacle")[0];
+            for(let i = 0; i < 10; i++){
+                const obstacle = obstacleModel.clone();
+                self.placeObstacles(0, self.state.numCols-1, 0, self.state.numRows-1, obstacle);
+            }
+            
 			objects.forEach((obj) => {
+                obj.castShadow = true;
 				if(obj.side === "enemy"){
 					self.placeObject(3, self.state.numRows - 2, 2, Math.floor(self.state.numCols/2), obj, this.enemyUnitStats);
 					scene.add(obj);
-				}else{
+				}else if(obj.side === "player"){
 					self.placeObject(3, self.state.numRows - 2, Math.floor(self.state.numCols/2) + 1, self.state.numCols - 2, obj, this.playerUnitStats);
 					scene.add(obj);
 				}
 			});
+            
 			requestAnimationFrame(update);
 		});
 		
@@ -180,8 +216,28 @@ class Game extends React.Component{
 		let maxReached = false;
 		let minReached = false;
 		
-		function update(){		
-			renderer.render(scene, camera);
+		function update(){
+            if(self.lerpCamera){
+                if(self.state.currentPlayerUnit){
+                    const currObj = self.state.playerUnits[self.state.currentPlayerUnit.id];
+                    const pos = currObj.position;
+                    
+                    // some position relative to the player's current unit
+                    const endCamPos = new THREE.Vector3(
+                        pos.x + 80,
+                        pos.y + 5,
+                        pos.z + 8 //self.state.camera.position.z
+                    );
+                    
+                    self.perspCamera.position.copy(endCamPos);
+                    self.perspCamera.lookAt(currObj.position);
+                    self.perspCamera.rotateZ(90 * Math.PI / 180);
+                }
+                
+                renderer.render(scene, self.perspCamera);
+            }else{
+                renderer.render(scene, self.orthoCamera);
+            }
 			
 			// keep adding to rotation until max is reached. 
 			// if maxed is reached, keep decreasing rotation until min is reached.
@@ -210,7 +266,7 @@ class Game extends React.Component{
 		}
 	}
 	
-	getModel(modelFilePath, side){
+	getModel(modelFilePath, side, name){
 		return new Promise((resolve, reject) => {
 			this.state.loader.load(
 				modelFilePath,
@@ -230,6 +286,9 @@ class Game extends React.Component{
 						
 							obj.side = side; // player or enemy mesh?
 							resolve(obj);
+                            obj.name = name;
+                            
+                            console.log(obj);
 						}
 					});
 				},
@@ -309,7 +368,7 @@ class Game extends React.Component{
 			gridCell = document.getElementById('row'+startRow+'column'+startCol);
 		}
 		
-		let v = convert2dCoordsTo3d(gridCell, this.state.renderer, this.state.camera, this.state.width, this.state.height);
+		let v = convert2dCoordsTo3d(gridCell, this.state.renderer, this.orthoCamera, this.state.width, this.state.height);
 		object.position.set(v.x, v.y, -450);
 		
 		if(object.side === "enemy"){
@@ -322,15 +381,26 @@ class Game extends React.Component{
 	}
 
 	// place obstacles randomly
-	placeObstacles(leftBound, rightBound, bottomBound, topBound){
+	placeObstacles(leftBound, rightBound, bottomBound, topBound, obj){
 
 		let randCell = this.getRandomCell(topBound, bottomBound, leftBound, rightBound);
 		
 		while(randCell.className !== ""){
 			randCell = this.getRandomCell(topBound, bottomBound, leftBound, rightBound)
 		}
-		
-		randCell.style.backgroundColor = "#000";
+        
+        if(obj){
+            let v = convert2dCoordsTo3d(randCell, this.state.renderer, this.orthoCamera, this.state.width, this.state.height);
+            
+            // TODO: rotate about Z randomly
+            obj.scale.x *= 0.15;
+            obj.scale.y *= 0.15;
+            obj.scale.z *= 0.15;
+            obj.position.set(v.x, v.y, -450);
+            this.state.scene.add(obj);
+		}
+        
+		//randCell.style.backgroundColor = "#000";
 		randCell.className = "obstacle";
 	}
 	
@@ -340,8 +410,6 @@ class Game extends React.Component{
 		
 	****/
 	activeObject(currElement, playerList){
-		
-		//console.log(playerList.length);
 
 		// only the player can select/move their own units 
 		if(playerList[currElement.id] === undefined){
@@ -544,7 +612,7 @@ class Game extends React.Component{
 				}
 			
 				// move the unit there
-				let v = convert2dCoordsTo3d(element, this.state.renderer, this.state.camera, this.state.width, this.state.height); 
+				let v = convert2dCoordsTo3d(element, this.state.renderer, this.orthoCamera, this.state.width, this.state.height); 
 				let obj = this.state.playerUnits[playerUnit.id];
 				
 				if(moveToDestination(playerUnit, element, v, obj, currUnitPaths)){
@@ -565,7 +633,15 @@ class Game extends React.Component{
 			
 		}
 	}
-	
+    
+    toggleLerpCamera(){
+        this.lerpCamera = !this.lerpCamera;
+        if(this.lerpCamera){
+            document.getElementById('grid').style.display = "none";
+        }else{
+            document.getElementById('grid').style.display = "block";
+        }
+    }
 	
 	
 	/*****
@@ -735,7 +811,6 @@ class Game extends React.Component{
 	// game console will rerender if dialogMsgs receives a new message
 	// hand will rerender as cards get used up OR player requests to draw new cards 
 	render(){
-		
 		let gameMethods = {
 			'drawCards': this.drawCards ,
 			'endPlayerTurn': this.endPlayerTurn,
@@ -764,6 +839,10 @@ class Game extends React.Component{
 					endPlayerTurn={this.endPlayerTurn} 
 					drawCards={this.drawCards}
 				/>
+                
+                <button onClick={this.toggleLerpCamera}> change camera </button>
+                
+                <br />
 				
 				<Grid 
 					width={this.state.width}
