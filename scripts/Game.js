@@ -1,25 +1,14 @@
-import { getPathsDefault, 
-		 getAttackRange, 
-		 getCell, 
-		 validSpace, 
-		 leaveSpace, 
-		 selectEnemyOn, 
-		 selectEnemyOut, 
+import {
 		 convert2dCoordsTo3d, 
-		 move, 
-		 rotate,
-		 getMoveRotation,
-		 getMoveDirection,
-		 checkRotation,
-		 moveCellAttributes,
-		 moveToDestination
+		 //move, 
+		 //rotate,
 	  } from './Utils.js';
 import { Deck } from './Deck.js';
 import { CurrentHand, CardDisplay } from './Hand.js';
 import { GameConsole } from './GameConsole.js';
 import { Header } from './Header.js';
 import { Grid } from './Grid.js';
-import { enemyMovement, enemyMovement2 } from "./enemyAI.js";
+//import { enemyMovement, enemyMovement2 } from "./enemyAI.js";
 
 import { CompleteDomination } from "./cards/card1.js";
 import { PancakeSniper } from "./cards/card2.js";
@@ -27,6 +16,9 @@ import { BearAttack } from "./cards/card3.js";
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { Water } from 'three/examples/jsm/objects/Water.js';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
 
 /*** NOTES
 
@@ -41,14 +33,185 @@ for one thing.
 
 ***/
 
+function inRange(v1, v2, limit){
+    return (v1.x <= v2.x + limit && v1.x >= v2.x - limit && v1.y <= v2.y + limit && v1.y >= v2.y - limit);
+}
+
+function move(object, targetPos, directionVec, setIntervalName){
+    // stop movement if reach target		
+    // remember that in 3d space, downward movement means increasing negative numbers (unlike in 2d where going down means increasing positive value)
+    if(inRange(object.position, targetPos, 0.1)){
+        clearInterval(setIntervalName);
+    }else{
+        object.position.addScaledVector(directionVec, 0.2);
+    }
+}
+
+function getAngleBetween(obj, vec){
+    // https://github.com/mrdoob/three.js/issues/1606
+    const matrix = new THREE.Matrix4();
+    matrix.extractRotation(obj.matrix);
+    
+    const direction = new THREE.Vector3(0, 0, 1);
+    direction.applyMatrix4(matrix);
+
+    const currDirectionVector = direction; 
+    const angleBetween = currDirectionVector.angleTo(vec);
+    return angleBetween;
+}
+
+function rotate(object, angle, targetVec, setIntervalName, resolve){
+    const limit = 0.03;
+    const angleBetween = getAngleBetween(object, targetVec);
+    if(angleBetween >= -limit && angleBetween <= limit){
+        console.log("finished rotating");
+        clearInterval(setIntervalName);
+        resolve("done rotating");
+    }else{
+        object.rotateOnAxis(new THREE.Vector3(0, 1, 0), angle);
+    }
+}
+
+function moveObj(objToMove, targetPos){
+    // check to make sure what moves are valid.
+    // i.e. if an enemy ship is alread in another enemy's circle, they can move outside the circle
+    // or rotate. they can't move closer if already in range to a fellow enemy. 
+    let obj = objToMove;
+    let v = targetPos;
+    let vec = new THREE.Vector3(v.x - obj.position.x, v.y - obj.position.y, v.z - obj.position.z);
+            
+    // get curr unit direction vector 
+    // https://github.com/mrdoob/three.js/issues/1606
+    let angleBetween = getAngleBetween(obj, vec);
+    
+    // figure out if the angle should be added (clockwise) or subtracted (rotate counterclckwise)
+    // https://stackoverflow.com/questions/16613616/work-out-whether-to-turn-clockwise-or-anticlockwise-from-two-angles
+    let matrix = new THREE.Matrix4();
+    matrix.extractRotation(obj.matrix);
+    let direction = new THREE.Vector3(0, 0, 1);
+    direction.applyMatrix4(matrix);
+    let currDirectionVector = direction; 
+
+    let crossProductLength = currDirectionVector.cross(vec);
+    let rotatePromise = new Promise((resolve, reject) => {
+        if(Math.abs(crossProductLength.z) > 0){
+            // clockwise
+            let rotateFunc = setInterval(
+                function(){
+                    rotate(obj, angleBetween / 40, vec, rotateFunc, resolve);
+                }, 35
+            );
+        }else{
+            // counterclockwise
+            let rotateFunc = setInterval(
+                function(){
+                    rotate(obj, -angleBetween / 40, vec, rotateFunc, resolve);
+                }, 35
+            );
+        }
+    });
+    
+    rotatePromise.then((result) => {
+        console.log(result);
+        
+        // move to point clicked
+        vec.normalize();
+        let moveFunc = setInterval(
+            function(){
+                obj.isMoving = true;
+                move(obj, v, vec, moveFunc);
+                obj.isMoving = false;
+            }, 30
+        );
+    });
+}
+
+function explosionEffect(mesh, scene){
+    //console.log('explosion');
+    const position = mesh.position;
+    const geometry = new THREE.SphereGeometry(0.5, 12, 12);
+    const material = new THREE.MeshBasicMaterial({color: 0xffc0cb});//0x848884});
+    material.wireframe = true;
+    
+    const numParticles = 20;
+    for(let i = 0; i < numParticles; i++){
+        const particle = new THREE.Mesh(geometry, material);
+        particle.position.x = position.x - Math.random() * 3.3; //-Math.random() * position.x+2 + Math.random() * position.x+2;
+        particle.position.y = position.y + Math.random() * 2.5; //-Math.random() * position.y+2 + Math.random() * position.y+2;
+        particle.position.z = position.z + Math.random() * 2.3; //-Math.random() * position.z+2 + Math.random() * position.z+2;
+        
+        const sign = Math.random() < 0.5 ? -1 : 1;
+        const direction = new THREE.Vector3(
+            sign * (Math.random() * -1.2),
+            sign * (Math.random() * 2.2),
+            sign * (Math.random() * -1.2)
+        );
+        direction.normalize();
+        particle.name = 'particle' + i;
+        particle.direction = direction;
+        
+        scene.add(particle);
+        
+        setTimeout(() => {
+            scene.remove(particle);
+        }, 3000);
+    }
+}
+
+function airstrike(plane, target, scene){
+    console.log("setting up airstrike!");
+    plane.scale.set(0.85, 0.85, 0.85);
+    plane.add(new THREE.AxesHelper(5));
+    
+    // TODO: fix the axes of the plane model? z is pointing down it seems
+    plane.rotateY(Math.PI / 2);
+    plane.rotateX(Math.PI / 2);
+    
+    scene.add(plane);
+    const start = new THREE.Vector3();
+    start.copy(target.position);
+    start.x -= 300;
+    start.y += 50;
+    
+    /*
+    const end = new Vector3();
+    end.copy(target.position);
+    end.x += 80;
+    */
+    
+    plane.position.copy(start);
+    
+    // TODO: set plane rotation?
+    
+    plane.direction = new THREE.Vector3(3, 0, 0);
+    plane.target = target;
+    
+    setTimeout(() => {
+        scene.remove(plane);
+    }, 8000);
+}
+
+function togglePlayerSelectArea(playerMesh, scene){
+    if(playerMesh.selectAreaOn){
+        playerMesh.selectAreaOn = false;
+        scene.remove(playerMesh.selectArea);
+    }else{
+        playerMesh.selectArea.position.set(playerMesh.position.x, playerMesh.position.y + 1.0, playerMesh.position.z);
+        scene.add(playerMesh.selectArea);
+        playerMesh.selectAreaOn = true;
+    }
+}
+
 class Game extends React.Component{
 	constructor(props){
 		super(props);
+        // what doesn't need to be in state?
+        // renderer, scene, loader
 		this.state = {
 			'width': this.props.gridWidth, // width in px
 			'height': this.props.gridHeight, // height in px
-			'numRows': Math.floor(this.props.gridHeight / 60),
-			'numCols': Math.floor(this.props.gridWidth / 52),
+			//'numRows': Math.floor(this.props.gridHeight / 60),
+			//'numCols': Math.floor(this.props.gridWidth / 52),
 			'playerUnits': {}, // map a grid cell's id to a unit
 			'enemyUnits': {},
 			'playerDeck': new Deck([PancakeSniper, CompleteDomination, BearAttack]),
@@ -60,16 +223,16 @@ class Game extends React.Component{
 			'enemyScore': 0,
 			'playerScore': 0,
 			'playerMoves': 100,
+            'orbitControlsOn': false,
+            'perspCameraMode': false,
 			'currentEnemyUnit': null, // for displaying info of the current enemy selected
 			'currentPlayerUnit': null, // currently selected player unit, and for displaying info of the current player unit selected 
 			'playerTurn': true, // boolean indicating if player's turn or not
 			'renderer': null,
 			'scene': null,
 			'loader': new GLTFLoader(), // don't think this should be part of react state?
+            'airstrike': false,
 		};
-		
-		this.pathHighlight = "1px solid rgb(203, 216, 245)";
-		this.attackRangeHighlight = "1px solid rgb(255, 25, 25)";
 		
 		this.playerUnitStats = {'health': 50, 'attack': 20, 'className': 'player', 'unitType': 'range2', 'direction': 'left', 'span': 3, 'bgImage': 'assets/battleship-edit.png'};
 		this.enemyUnitStats = {'health': 50, 'attack': 20, 'className': 'enemy', 'unitType': 'range2', 'direction': 'right', 'span': 3, 'bgImage': 'assets/battleship2-edit.png'};
@@ -82,6 +245,10 @@ class Game extends React.Component{
         this.camStartTime; // start time for lerping
         this.lerpCamera = false;
         this.clock = new THREE.Clock();
+        
+        this.orbitControls = null;
+        
+        this.planeModel = null;
         
 		// methods for binding to pass to child components 
 		this.drawCards = this.drawCards.bind(this);
@@ -98,6 +265,8 @@ class Game extends React.Component{
 		this.removeCardFromHand = this.removeCardFromHand.bind(this);
 		this.setPlayerMoves = this.setPlayerMoves.bind(this);
         this.toggleLerpCamera = this.toggleLerpCamera.bind(this);
+        this.toggleOrbitControls = this.toggleOrbitControls.bind(this);
+        this.toggleAirstrike = this.toggleAirstrike.bind(this);
 	}
 	
 	/*** 
@@ -107,23 +276,6 @@ class Game extends React.Component{
 		let self = this;
 		let width = self.state.width;
 		let height = self.state.height;
-	
-		// add event listeners
-		document.addEventListener('click', function(e){
-			if(e.target.className === "enemy"){
-				// tell parent Game component about the currently selected enemy to display its info 
-				self.selectEnemyUnit(e.target);
-			}
-		});
-		
-		// bind click event to highlight paths
-		for(let i = 0; i < Math.floor(height / 60); i++){
-			for(let j = 0; j < Math.floor(width / 52); j++){
-				let cell = document.getElementById('row' + i + 'column' + j);
-				cell.addEventListener('click', () => { self.activeObject(cell, self.state.playerUnits); });
-				cell.addEventListener('click', () => { self.moveUnit(cell); });
-			}
-		}
 		
 		const WIDTH = self.state.width; //1400;
 		const HEIGHT = self.state.height; //600;
@@ -138,130 +290,310 @@ class Game extends React.Component{
 		
 		const container = document.querySelector('#container');
 		const renderer = new THREE.WebGLRenderer();
+        //renderer.toneMappingExposure = 0.5;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.BasicShadowMap;
         
         this.orthoCamera = new THREE.OrthographicCamera(LEFT, RIGHT, TOP, BOTTOM, NEAR, FAR);
-        this.perspCamera = new THREE.PerspectiveCamera(15, WIDTH / HEIGHT, 1, 5000);
+        this.orthoCamera.rotateX(Math.PI / 2);
         
-        const geometry = new THREE.PlaneGeometry(500, 300);
-        const material = new THREE.MeshBasicMaterial({color: 0x187bcd, side: THREE.DoubleSide});
-        //material.wireframe = true;
-        const plane = new THREE.Mesh(geometry, material);
-        plane.receiveShadow = true;
-        plane.translateZ(-449.6);
+        this.perspCamera = new THREE.PerspectiveCamera(15, WIDTH / HEIGHT, 0.01, 10000);
+        
+        this.orbitControls = new OrbitControls(this.perspCamera, renderer.domElement);
+        this.orbitControls.enabled = false;
+        this.orbitControls.enablePan = false;
+        this.orbitControls.update();
+        
+        const raycaster = new THREE.Raycaster();
+        //raycaster.linePrecision = 0.1;
         
 		const scene = new THREE.Scene();
-		scene.background = new THREE.Color(0xffffff);
+		//scene.background = new THREE.Color(0xffffff);
 		
 		scene.add(this.orthoCamera);
         scene.add(this.perspCamera);
-        scene.add(plane);
+        //scene.add(plane);
         
 		renderer.setSize(WIDTH, HEIGHT);	
 		container.appendChild(renderer.domElement);
+        
+        // https://threejs.org/examples/webgl_shaders_ocean.html
+        
+        // Water
+        const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
+
+        const water = new Water(
+            waterGeometry,
+            {
+                textureWidth: 512,
+                textureHeight: 512,
+                waterNormals: new THREE.TextureLoader().load('waternormals.jpg', function(texture){
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                }),
+                sunDirection: new THREE.Vector3(),
+                sunColor: 0xffffff,
+                waterColor: 0x001e0f,
+                distortionScale: 3.7,
+                fog: scene.fog !== undefined
+            }
+        );
+        
+        water.name = 'water';
+        water.rotation.x = -Math.PI / 2;
+
+        scene.add(water);
+
+        // Skybox
+        const sky = new Sky();
+        sky.name = 'sky';
+        sky.scale.setScalar(10000);
+
+        const skyUniforms = sky.material.uniforms;
+
+        skyUniforms['turbidity'].value = 10;
+        skyUniforms['rayleigh'].value = 2;
+        skyUniforms['mieCoefficient'].value = 0.005;
+        skyUniforms['mieDirectionalG'].value = 0.8;
+        
+        const parameters = {
+            elevation: 2.2,
+            azimuth: 0
+        };
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const sceneEnv = new THREE.Scene();
+        const sun = new THREE.Vector3();
+
+        let renderTarget;
+
+        function updateSun(){
+            const phi = THREE.MathUtils.radToDeg(90 - parameters.elevation);
+            const theta = THREE.MathUtils.radToDeg(parameters.azimuth);
+
+            sun.setFromSphericalCoords(1, phi, theta);
+
+            sky.material.uniforms['sunPosition'].value.copy(sun);
+            water.material.uniforms['sunDirection'].value.copy(sun).normalize();
+
+            if(renderTarget !== undefined) renderTarget.dispose();
+
+            sceneEnv.add(sky);
+            renderTarget = pmremGenerator.fromScene(sceneEnv);
+            scene.add(sky);
+
+            scene.environment = renderTarget.texture;
+        }
+
+        updateSun();
+
+        // https://stackoverflow.com/questions/18553209/orthographic-camera-and-selecting-objects-with-raycast
+        // https://stackoverflow.com/questions/56349097/imprecise-raycast-with-orthographic-camera-in-three-js
+        // https://stackoverflow.com/questions/26412409/using-raycasting-to-check-the-object-in-front-of-a-perspective-camera-with-first
+        const mouse = new THREE.Vector2();
+        renderer.domElement.addEventListener('mousedown', (evt) => {
+            if(this.state.camera === this.orthoCamera){
+                const x = evt.clientX - renderer.domElement.getBoundingClientRect().left;
+                const y = evt.clientY - renderer.domElement.getBoundingClientRect().top;
+
+                mouse.x = (x / renderer.domElement.width) * 2 - 1;
+                mouse.y = -(y / renderer.domElement.height) * 2 + 1;
+
+                const v = new THREE.Vector3(mouse.x, mouse.y, 0).unproject(this.orthoCamera); // corresponding 3d coord to where clicked
+                //console.log(`3d space - x: ${v.x}, y: ${v.y}, z: ${v.z}`);
+                
+                raycaster.set(v, new THREE.Vector3(0, -1, 0)); // ortho camera is looking down about the y-axis
+                
+                const intersects = raycaster.intersectObjects(scene.children, true); // make sure it's recursive
+                if(intersects){
+                    const selected = intersects.filter(x => !(x.object.name === 'sky' || x.object.name === 'water' || x.object.name === 'axeshelper'))[0]; // get first hit that's not sky or water or axeshelper
+                    
+                    if(!selected) return;
+                    
+                    if(selected.object.name === 'player'){
+                        self.selectPlayerUnit(selected.object);
+                        
+                        // toggle select area visibility
+                        togglePlayerSelectArea(selected.object, scene);
+                    }else if(selected.object.name === 'selectArea'){
+                        togglePlayerSelectArea(self.state.currentPlayerUnit, scene)
+                        self.state.currentPlayerUnit.isMoving = true;
+                        //console.log(`3d space - x: ${v.x}, y: ${v.y}, z: ${v.z}`);
+                        //console.log(`player pos - x: ${self.state.currentPlayerUnit.position.x}, y: ${self.state.currentPlayerUnit.position.y}, z: ${self.state.currentPlayerUnit.position.z}`);
+                        v.y = 0;
+                        moveObj(self.state.currentPlayerUnit, v);
+                    }
+                    
+                    if(selected.object.name === 'enemy' || selected.object.name === 'obstacle'){
+                        if(self.state.currentPlayerUnit && selected.object.position.distanceTo(self.state.currentPlayerUnit.position) <= self.state.currentPlayerUnit.selectArea.geometry.parameters.radius + 5){
+                            console.log("attacking...");
+                            
+                            if(self.state.airstrike){
+                                airstrike(self.planeModel.clone(), selected.object, scene);
+                            }
+                            
+                            explosionEffect(selected.object, scene);
+                        }
+                    }
+                    
+                    if(selected.object.material) selected.object.material.wireframe = true;
+                    setTimeout(() => {
+                        if(selected.object.material) selected.object.material.wireframe = false;
+                    }, 1000);
+                }
+            }else{
+                const x = evt.clientX - renderer.domElement.getBoundingClientRect().left;
+                const y = evt.clientY - renderer.domElement.getBoundingClientRect().top;
+                
+                mouse.x = (x / renderer.domElement.width) * 2 - 1;
+                mouse.y = -(y / renderer.domElement.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, this.perspCamera);
+                
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                if(intersects){
+                    const selected = intersects.filter(x => !(x.object.name === 'sky' || x.object.name === 'water' || x.object.name === 'axeshelper'))[0];
+                    
+                    if(!selected) return;
+                    
+                    if(selected.object.name === 'selectArea'){
+                        // TODO: how to know correct z-index based on where user clicked on selectArea? maybe don't allow movement in perspective cam mode
+                        
+                        //self.state.currentPlayerUnit.isMoving = true;
+                        //const v = new THREE.Vector3(mouse.x, mouse.y, -450).unproject(this.perspCamera);
+                        //moveObj(self.state.currentPlayerUnit, v);
+                    }else if(selected.object.name === 'player'){
+                        // TODO: maybe don't allow movement in perspective cam mode
+                        //togglePlayerSelectArea(selected.object, scene);
+                    }else if(selected.object.name === 'enemy' || selected.object.name === 'obstacle'){
+                        if(self.state.currentPlayerUnit && selected.object.position.distanceTo(self.state.currentPlayerUnit.position) <= self.state.currentPlayerUnit.selectArea.geometry.parameters.radius + 5){
+                            if(self.state.airstrike){
+                                airstrike(self.planeModel.clone(), selected.object, scene);
+                            }
+                            
+                            explosionEffect(selected.object, scene);
+                        }
+                    }
+                }                
+            }
+        });
 		
+        renderer.domElement.addEventListener('mousemove', (evt) => {
+                const x = evt.clientX - renderer.domElement.getBoundingClientRect().left;
+                const y = evt.clientY - renderer.domElement.getBoundingClientRect().top;
+                
+                mouse.x = (x / renderer.domElement.width) * 2 - 1;
+                mouse.y = -(y / renderer.domElement.height) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, this.state.camera);
+                
+                const intersects = raycaster.intersectObjects(scene.children, true); // make sure it's recursive
+                if(intersects){
+                    const selected = intersects.filter(x => !(x.object.name === 'sky' || x.object.name === 'water' || x.object.name === 'axeshelper'))[0]; // get first hit that's not sky or water or axeshelper
+                    
+                    if(!selected) return;
+                    
+                    if(self.state.currentPlayerUnit && selected.object.position.distanceTo(self.state.currentPlayerUnit.position) <= self.state.currentPlayerUnit.selectArea.geometry.parameters.radius + 5){
+                        // flash wireframe so we know what we selected
+                        // testing explosion effect
+                        if(selected.object.name === 'enemy' || selected.object.name === 'obstacle'){     
+                            if(selected.object.material) selected.object.material.wireframe = true;
+                            setTimeout(() => {
+                                if(selected.object.material) selected.object.material.wireframe = false;
+                            }, 1000);
+                        }
+                    }
+                }
+        });
+        
 		this.setState({'renderer': renderer, 'camera': this.orthoCamera, 'scene': scene});
         
         const hemiLight = new THREE.HemisphereLight(0xffffff);
-        hemiLight.position.set(0, 0, 10);
-        scene.add(hemiLight);
+        hemiLight.position.set(0, 80, 0);
+        //scene.add(hemiLight);
 		
-		let spotLight = new THREE.SpotLight(0xffffff);
+		const spotLight = new THREE.SpotLight(0xffffff);
 		spotLight.position.set(0, 0, 20);
 		spotLight.castShadow = true;
-        /*
-		spotLight.shadow.mapSize.width = 3000;
-		spotLight.shadow.mapSize.height = 500;
-		spotLight.shadow.camera.near = 10;
-		spotLight.shadow.camera.far = 1000;
-		spotLight.shadow.camera.fov = 30;
-        */
-		scene.add(spotLight);
-			
+		//scene.add(spotLight);
+
 		let obj = null;
 		let loadedModels = [];
 		loadedModels.push(self.getModel('../assets/battleship-edit.glb', 'player', 'player'));
 		loadedModels.push(self.getModel('../assets/battleship2.glb', 'enemy', 'enemy'));
         loadedModels.push(self.getModel('../assets/spiky-thing.gltf', 'none', 'obstacle'));
+        loadedModels.push(self.getModel('../assets/f14.gltf', 'none', 'plane'));
 		
 		Promise.all(loadedModels).then((objects) => {
-            
             console.log(objects);
             
             // place obstacles
             const obstacleModel = objects.filter(x => x.name === "obstacle")[0];
             for(let i = 0; i < 10; i++){
                 const obstacle = obstacleModel.clone();
-                self.placeObstacles(0, self.state.numCols-1, 0, self.state.numRows-1, obstacle);
+                self.placeObstacles(obstacle);
             }
             
 			objects.forEach((obj) => {
                 obj.castShadow = true;
 				if(obj.side === "enemy"){
-					self.placeObject(3, self.state.numRows - 2, 2, Math.floor(self.state.numCols/2), obj, this.enemyUnitStats);
+					self.placeObject(obj);
 					scene.add(obj);
 				}else if(obj.side === "player"){
-					self.placeObject(3, self.state.numRows - 2, Math.floor(self.state.numCols/2) + 1, self.state.numCols - 2, obj, this.playerUnitStats);
+					self.placeObject(obj);
 					scene.add(obj);
-				}
+				}else if(obj.name === 'plane'){
+                    this.planeModel = obj;
+                }
 			});
             
 			requestAnimationFrame(update);
 		});
 		
-		let rotation = 0.05;
-		let maxRotation = Math.PI * .05;
-		let minRotation = -maxRotation;
-		let maxReached = false;
-		let minReached = false;
-		
 		function update(){
             if(self.lerpCamera){
                 if(self.state.currentPlayerUnit){
-                    const currObj = self.state.playerUnits[self.state.currentPlayerUnit.id];
+                    const currObj = self.state.currentPlayerUnit; //self.state.playerUnits[self.state.currentPlayerUnit.id];
                     const pos = currObj.position;
                     
                     // some position relative to the player's current unit
                     const endCamPos = new THREE.Vector3(
                         pos.x + 80,
-                        pos.y + 5,
-                        pos.z + 8 //self.state.camera.position.z
+                        pos.y + 2,
+                        pos.z - 10 //self.state.camera.position.z
                     );
                     
-                    self.perspCamera.position.copy(endCamPos);
-                    self.perspCamera.lookAt(currObj.position);
-                    self.perspCamera.rotateZ(90 * Math.PI / 180);
+                    if(!self.orbitControls.enabled){
+                        self.perspCamera.position.copy(endCamPos);
+                        self.perspCamera.lookAt(currObj.position);
+                    }
+                    
+                    if(self.orbitControls.enabled){
+                        self.orbitControls.target = self.state.currentPlayerUnit.position;
+                        self.orbitControls.update();
+                    }
                 }
-                
+               
                 renderer.render(scene, self.perspCamera);
             }else{
                 renderer.render(scene, self.orthoCamera);
             }
-			
-			// keep adding to rotation until max is reached. 
-			// if maxed is reached, keep decreasing rotation until min is reached.
-			// if min is reached, repeat step 1. 
-			let allUnits = new Set(Object.values(self.state.playerUnits).concat(Object.values(self.state.enemyUnits)));
-			allUnits.forEach((mesh) => {
-				if(mesh.rotation.z < maxRotation && !maxReached)
-				{
-					mesh.rotation.z += 0.002;
-					if(mesh.rotation.z >= maxRotation){
-						maxReached = true;
-						minReached = false;
-					}
-				}else if(maxReached){
-					mesh.rotation.z -= 0.002;
-					if(mesh.rotation.z <= minRotation){
-						minReached = true;
-						maxReached = false;
-					}
-				}else if(minReached){
-					mesh.rotation.z += 0.002;
-				}
-			});
-			
+            
+            scene.children.forEach(child => {
+                if(child.name.includes("particle")){
+                    child.position.add(child.direction);
+                }
+                
+                if(child.name.includes("plane")){
+                    child.position.add(child.direction);
+                    
+                    if(Math.abs(child.target.position.x - child.position.x) <= 1.5){
+                        explosionEffect(child.target, scene);
+                    }
+                }
+            });
+            
+            water.material.uniforms['time'].value += 1.0 / 60.0;
+            
 			requestAnimationFrame(update);
 		}
 	}
@@ -282,13 +614,25 @@ class Game extends React.Component{
 							obj.scale.y = child.scale.y * 20;
 							obj.scale.z = child.scale.z * 20;
 							obj.rotateOnAxis(new THREE.Vector3(0,1,0), Math.PI / 2); // note this on object's local axis! so when you rotate, the axes change (i.e. x becomes z)
-							obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
+							//obj.rotateOnAxis(new THREE.Vector3(0,0,1), Math.PI / 2);
 						
 							obj.side = side; // player or enemy mesh?
 							resolve(obj);
                             obj.name = name;
                             
-                            console.log(obj);
+                            if(name === 'player'){
+                                // add select area to player mesh
+                                const geometry = new THREE.CircleGeometry(17, 32);
+                                const material = new THREE.MeshBasicMaterial({color: 0xffff00, opacity: 0.5, transparent: true, side: THREE.DoubleSide});
+                                const circle = new THREE.Mesh(geometry, material);
+                                circle.name = "selectArea";
+                                circle.rotateX(Math.PI / 2);
+                                
+                                obj.isMoving = false;
+                                obj.selectArea = circle; 
+                                obj.selectAreaOn = false; // TODO: maybe we don't need this flag? can we just check the circle mesh's parent? e.g. scene if in scene, nothing if not in scene?
+                                // get radius via: circle.geometry.parameters.radius
+                            }
 						}
 					});
 				},
@@ -305,33 +649,6 @@ class Game extends React.Component{
 		});
 	}
 	
-	getRandomCell(startRow, endRow, startCol, endCol){
-		let randomCol = Math.floor(Math.random() * (endCol - startCol + 1) + startCol);
-		let randomRow = Math.floor(Math.random() * (endRow - startRow + 1) + startRow);
-		let gridCell = document.querySelector("#row" + randomRow + "column" + randomCol);
-		return gridCell;
-	}
-	
-	setCellAttributes(element, attributes){
-		for(let property in attributes){
-			if(property === "className"){
-				element.className = attributes[property];
-			}else{
-				element.setAttribute(property, attributes[property]);
-			}
-		}		
-	}
-	
-	removeCellAttributes(element, attributes){
-		for(let property in attributes){
-			if(propert === "className"){
-				element.classList.remove(attributes[property]);
-			}else{
-				element.removeAttribute(property);
-			}
-		}
-	}
-	
 	/****
 		place unit in random location
 		and add to either player's or enemy's list of units 
@@ -346,323 +663,48 @@ class Game extends React.Component{
 		@stats = dictionary containing unit attributes to add to grid cell element
 		the bound params are INCLUSIVE
 	****/
-	placeObject(startRow, endRow, startCol, endCol, object, stats){
-		let gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
-		
-		// don't allow placement in cells with a unit or obstacle placed there already
-		// check left and right cells of the potential cell to place as well (can't be next to obstacles)
-		// this can be dangerous and lead to infinite loop (there should always be a viable place but random could always return the same numbers...)
-		let left = gridCell.previousSibling;
-		let right = gridCell.nextSibling;
-		let retries = 0;
-		
-		// only have to worry about possibly placing where obstacles are 
-		while(retries < 5 && (gridCell.className === "obstacle" || (left.className === "obstacle") || (right.className === "obstacle"))){
-			gridCell = this.getRandomCell(startRow, endRow, startCol, endCol);
-			console.log("retry: " + retries + ", " + gridCell.id);
-			retries++;
-		}
-		
-		// to prevent an infinite loop :/
-		if(retries >= 5){
-			gridCell = document.getElementById('row'+startRow+'column'+startCol);
-		}
-		
-		let v = convert2dCoordsTo3d(gridCell, this.state.renderer, this.orthoCamera, this.state.width, this.state.height);
-		object.position.set(v.x, v.y, -450);
-		
-		if(object.side === "enemy"){
-			this.state.enemyUnits[gridCell.id] = object;
-		}else{
-			this.state.playerUnits[gridCell.id] = object;
-		}
-		
-		this.setCellAttributes(gridCell, stats);
+	placeObject(object){
+        const v = convert2dCoordsTo3d(this.state.renderer, this.orthoCamera, this.state.width, this.state.height);
+        
+        if(object.name === 'enemy'){
+            object.position.set(v.x, -1.5, v.y);
+        }else{
+            object.position.set(v.x, 0, v.y);
+        }
+        
+        const axesHelper = new THREE.AxesHelper(5);
+        axesHelper.name = 'axeshelper';
+        object.add(axesHelper);
 	}
 
 	// place obstacles randomly
-	placeObstacles(leftBound, rightBound, bottomBound, topBound, obj){
-
-		let randCell = this.getRandomCell(topBound, bottomBound, leftBound, rightBound);
-		
-		while(randCell.className !== ""){
-			randCell = this.getRandomCell(topBound, bottomBound, leftBound, rightBound)
-		}
-        
+	placeObstacles(obj){
         if(obj){
-            let v = convert2dCoordsTo3d(randCell, this.state.renderer, this.orthoCamera, this.state.width, this.state.height);
+            const v = convert2dCoordsTo3d(this.state.renderer, this.orthoCamera, this.state.width, this.state.height);
             
             // TODO: rotate about Z randomly
             obj.scale.x *= 0.15;
             obj.scale.y *= 0.15;
             obj.scale.z *= 0.15;
-            obj.position.set(v.x, v.y, -450);
+            obj.position.set(v.x, 0, v.y);
             this.state.scene.add(obj);
-		}
-        
-		//randCell.style.backgroundColor = "#000";
-		randCell.className = "obstacle";
-	}
-	
-	/****
-	
-		show paths when clicking on unit
-		
-	****/
-	activeObject(currElement, playerList){
-
-		// only the player can select/move their own units 
-		if(playerList[currElement.id] === undefined){
-			return;
-		}
-		
-		// also can only move if it's the player's turn 
-		let elementPaths = getPathsDefault(currElement);
-		
-		// what kind of unit is it?
-		// double equals cause pathlight value might be a string (so need looser comparison) 
-		if(currElement.getAttribute('pathlight') == 0){
-			// light up the paths 
-			for(let key in elementPaths){
-				if(elementPaths[key].className === ""){
-					elementPaths[key].style.border = this.pathHighlight;
-				}
-			}
-			currElement.setAttribute('pathlight', 1);
-			this.selectPlayerUnit(currElement);
-			
-			// if special unit, show attack paths 
-			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = getAttackRange(currElement, 2);
-				for(let path in attackRange){
-					if(attackRange[path] && elementPaths[path]){
-						// what if there's an obstacle between this unit and a potential 
-						// cell to attack? since range is 2, if we can move to the next cell in 
-						// the direction given by 'path', then there isn't an obstacle in the way
-						attackRange[path].style.border = "1px solid #FF1919";
-					}
-				}
-			}
-			
-		}else if(currElement.getAttribute('pathlight') == 1){
-			// this is deselecting a unit 
-			for(let key in elementPaths){
-				if(elementPaths[key]){
-					elementPaths[key].style.border = "1px solid #000";
-					//elementPaths[key].style.backgroundColor = "transparent";
-				}
-			}
-			
-			// if special unit, un-highlight attack paths also
-			if(currElement.getAttribute("unitType") === 'range2'){
-				let attackRange = getAttackRange(currElement, 2);
-				for(let path in attackRange){
-					if(attackRange[path] && elementPaths[path]){
-						attackRange[path].style.border = "1px solid #000";
-					}
-				}
-			}
-			
-			currElement.setAttribute('pathlight', 0);
-			this.selectPlayerUnit(null);
-		}
-	}
-	
-	// explosion animation for when enemy unit is destroyed
-	explosionAnimation(timestamp, num, canvas){
-		if(num > 6){
-			return;
-		}
-		let nextImage = new Image();
-		nextImage.src = './explosion_animation/' + num + '.png';
-
-		nextImage.onload = () => {
-			let ctx = canvas.getContext('2d');
-			ctx.clearRect(0,0,canvas.width,canvas.height);
-			ctx.drawImage(nextImage,0,0,nextImage.width,nextImage.height);
-			window.requestAnimationFrame((timestamp) => this.explosionAnimation(timestamp, num+1, canvas));
-		}
-	}
-
-	/*****
-
-		move player's units 
-
-		@element - the DOM element you want to move to 
-		
-		side effects:
-			- playerMoves should be decremented by 1 if player moves or attacks 
-		
-	******/
-	moveUnit(element){
-		
-		let playerUnit = this.state.currentPlayerUnit;
-		
-		if(playerUnit == null){
-			return;
-		}
-		
-		if(this.state.playerMoves === 0){
-			this.updateConsole("no more moves left!");
-			return;
-		}
-		
-		let currUnitPaths = getPathsDefault(playerUnit);
-		
-		/***
-			
-			also need to check enemy units and their locations to see whether the next square over 
-			is a valid move or possibly an attack. 
-		
-			track direction - see if unit needs to be rotated before moving 
-		
-		***/
-		// if square is highlighted or red (#FF1919) (for ranged units)
-		if(element.style.border === this.pathHighlight || element.style.border === this.attackRangeHighlight){
-			
-			// if cell to move in is an enemy unit 
-			if(element.className === "enemy"){
-				
-				//console.log("supposed to attack!");
-				
-				let animationCanvas = document.createElement('canvas');
-				
-				// show animation 
-				
-				animationCanvas.width = parseInt(element.style.width);
-				animationCanvas.height = parseInt(element.style.height);
-				animationCanvas.style.zIndex = 1;
-				let canvasCtx = animationCanvas.getContext('2d');
-				canvasCtx.fillStyle = "rgba(0,0,0,0)";
-				canvasCtx.fillRect(0, 0, animationCanvas.width, animationCanvas.height);
-				element.appendChild(animationCanvas);
-		
-				window.requestAnimationFrame((timestamp)=>{this.explosionAnimation(timestamp, 1, animationCanvas)});
-				
-				// do damage
-				// show some effects when dealing damage
-				let damage = element.getAttribute("health") - playerUnit.getAttribute("attack");
-				if(damage <= 0){
-					// remove from enemyUnits array 
-					this.removeFromEnemyUnits(element);
-				
-					// obliterate enemy 
-					let gridContainer = element.parentNode.parentNode.parentNode.id;
-					if(playerUnit.getAttribute("unitType") === 'range2'){
-						$('#grid').effect("bounce");
-					}else{
-						$('#grid').effect("shake");
-					}
-					
-					// remove animation canvas 
-					setTimeout(function(){
-						element.removeChild(animationCanvas);
-					}, 300);
-					
-					self.removeCellAttributes(element, self.enemyUnitStats);
-					
-				}else{
-					if(playerUnit.getAttribute("unitType") === 'range2'){
-						$('#grid').effect("bounce");
-					}else{
-						$('#grid').effect("shake");
-					}	
-					element.setAttribute("health", damage);
-				}
-
-				let currUnitPaths = getPathsDefault(playerUnit);
-				for(let key in currUnitPaths){
-					if(currUnitPaths[key]){
-						currUnitPaths[key].style.border = "1px solid #000";
-					}
-				}
-				playerUnit.setAttribute('pathlight', 0);
-						
-				// for ranged units
-				// clear the red highlight
-				if(playerUnit.getAttribute("unitType") === 'range2'){
-					// we can assume the current unit is a ranged attacker
-					// we can't assume what the range is, so the range ought to be another html attribute 
-					let attackRange = getAttackRange(playerUnit, 2);
-					//console.log(attackRange);
-					for(let path in attackRange){
-						if(attackRange[path]){
-							attackRange[path].style.border = "1px solid #000";
-						}
-					}
-				}
-				// update playerMoves 
-				this.setPlayerMoves(this.state.playerMoves - 1);
-				this.updateConsole("player attacked!");
-				
-			}else if(element.style.border !== this.attackRangeHighlight){
-				// red squares only indicate attack range, not movement, so don't allow movement there
-				// for ranged units
-				// clear the red highlight
-				if(playerUnit.getAttribute("unitType") === 'range2'){
-					// we can assume the current unit is a ranged attacker
-					// we can't assume what the range is, so the range ought to be another html attribute 
-					let attackRange = getAttackRange(playerUnit, 2);
-
-					for(let path in attackRange){
-						if(attackRange[path]){
-							attackRange[path].style.border = "1px solid #000";
-						}
-					}
-				}
-			
-				// move the unit there
-				let v = convert2dCoordsTo3d(element, this.state.renderer, this.orthoCamera, this.state.width, this.state.height); 
-				let obj = this.state.playerUnits[playerUnit.id];
-				
-				if(moveToDestination(playerUnit, element, v, obj, currUnitPaths)){
-
-					if(this.state.playerUnits[playerUnit.id]){
-						// replace old cell representing this unit with new cell holding the moved unit
-						delete this.state.playerUnits[playerUnit.id];
-					}
-
-					// set currentUnit to new location
-					this.selectPlayerUnit(element);
-					this.state.playerUnits[element.id] = obj;
-					
-					// update playerMoves 
-					this.setPlayerMoves(this.state.playerMoves - 1);
-				}
-			}
-			
 		}
 	}
     
     toggleLerpCamera(){
         this.lerpCamera = !this.lerpCamera;
         if(this.lerpCamera){
-            document.getElementById('grid').style.display = "none";
+            this.setState({
+                'camera': this.perspCamera,
+                'perspCameraMode': true,
+            });
         }else{
-            document.getElementById('grid').style.display = "block";
+            this.setState({
+                'camera': this.orthoCamera,
+                'perspCameraMode': false,
+            });
         }
     }
-	
-	
-	/*****
-		enemy's turn 
-		@enemyAI = a function that tells each enemy unit how to move
-		@searchMethod = function that returns an array of grid cell ids representing the path to reach a player's unit		
-	******/
-	enemyTurn(enemyAI, searchMethod){
-		let promiseList = []
-		for(let key in this.state.enemyUnits){
-			// enemyAI function should return a promise
-			promiseList.push(enemyAI(document.getElementById(key), this.state, this.selectEnemyUnit, searchMethod));
-		}
-		Promise.all(promiseList).then((results) => {
-			alert('enemy ended turn');
-			this.endEnemyTurn();
-			// reset player's moves 
-			this.setPlayerMoves(Object.keys(this.state.playerUnits).length + this.state.playerHand.length);
-		});
-	}
-	
 	/*
 	addToDeck(card, deck, side){
 		let copy = [...deck];
@@ -673,6 +715,20 @@ class Game extends React.Component{
 			this.setState({'enemyDeck': copy});
 		}
 	}*/
+    
+    toggleOrbitControls(){
+        this.state.orbitControlsOn = !this.state.orbitControlsOn;
+        if(this.state.orbitControlsOn){
+            this.orbitControls.enabled = true;
+        }else{
+            this.orbitControls.enabled = false;
+        }
+    }
+    
+    toggleAirstrike(){
+        this.state.airstrike = !this.state.airstrike;
+        console.log("airstrike: " + this.state.airstrike);
+    }
 	
 	/***
 		
@@ -811,7 +867,7 @@ class Game extends React.Component{
 	// game console will rerender if dialogMsgs receives a new message
 	// hand will rerender as cards get used up OR player requests to draw new cards 
 	render(){
-		let gameMethods = {
+		const gameMethods = {
 			'drawCards': this.drawCards ,
 			'endPlayerTurn': this.endPlayerTurn,
 			'endEnemyTurn': this.endEnemyTurn,
@@ -826,32 +882,31 @@ class Game extends React.Component{
 			'removeCardFromHand': this.removeCardFromHand,
 			'setPlayerMoves': this.setPlayerMoves
 		};
-			
+        
+        const containerStyle = {
+            'position': 'relative',
+            'display': 'block',
+            'margin': '0 auto',
+            'width': this.state.width,
+        };
+        
+        const controlsStyle = {
+            'textAlign': 'center',
+        };
+
 		return(
 			<div>
-				<Header 
-					selectedEnemy={this.state.currentEnemyUnit} 
-					selectedUnit={this.state.currentPlayerUnit} 
-					playerUnits={this.state.playerUnits}
-					enemyUnits={this.state.enemyUnits}
-					playerTurn={this.state.playerTurn}
-					playerMoves={this.state.playerMoves}
-					endPlayerTurn={this.endPlayerTurn} 
-					drawCards={this.drawCards}
-				/>
+                <div id='controls' style={controlsStyle}>
+                    <button onClick={this.toggleLerpCamera}> change camera </button>
+                    <label>toggle orbit controls</label> <input type='checkbox' onChange={this.toggleOrbitControls} disabled={!this.state.perspCameraMode} />
+                    <label>toggle airstrike</label> <input type='checkbox' onChange={this.toggleAirstrike} />
+                </div>
                 
-                <button onClick={this.toggleLerpCamera}> change camera </button>
+				<br />
+                
+                <div id='container' style={containerStyle}></div>
                 
                 <br />
-				
-				<Grid 
-					width={this.state.width}
-					height={this.state.height}
-					numRows={this.state.numRows}
-					numCols={this.state.numCols}
-				/>
-				
-				<br />
 				
 				<GameConsole 
 					consoleMsgs={this.state.consoleMsgs}

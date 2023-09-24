@@ -22,7 +22,7 @@ const Grid = (props) => {
 		'height': props.height + 'px',
 		'position': 'absolute',
 		'top': 0,
-		'left': 0
+		'left': 0,
 	};
 	
 	let rowStyle = {
@@ -32,7 +32,7 @@ const Grid = (props) => {
 	};
 	
 	let colStyle = {
-		'border': '1px solid #000',
+		//'border': '1px solid #000',
 		'width': cellWidth + '%',
 		'height': cellHeight + '%'
 	};
